@@ -541,42 +541,6 @@ function checkPaymentReturn() {
     }
 }
 
-// ============================================================
-// STRIPE PAYMENT LINKS (Test/Sandbox Mode)
-// ============================================================
-const STRIPE_LINKS = {
-    monthly: 'https://buy.stripe.com/test_eVqdR83M0gRGf716nycIE00',
-    annual:  'https://buy.stripe.com/test_fZu14mdmA44Uf716nycIE01'
-};
-const STRIPE_SUCCESS_URL = 'https://cohua-platform.vercel.app/?payment=success';
-const STRIPE_CANCEL_URL  = 'https://cohua-platform.vercel.app/?payment=cancelled';
-
-function goStripe(plan) {
-    const link = STRIPE_LINKS[plan];
-    if (!link) {
-        alert('Payment link not configured yet. Contact admin@cohua.global');
-        return;
-    }
-    window.open(link, '_blank');
-}
-
-// Check for payment return
-function checkPaymentReturn() {
-    const params = new URLSearchParams(window.location.search);
-    const status = params.get('payment');
-    if (status === 'success') {
-        setTimeout(() => {
-            alert('Payment received! Your neon order is being processed.');
-            window.history.replaceState({}, '', window.location.pathname);
-        }, 500);
-    } else if (status === 'cancelled') {
-        setTimeout(() => {
-            alert('Payment was cancelled. You can try again anytime from the Neon Store.');
-            window.history.replaceState({}, '', window.location.pathname);
-        }, 500);
-    }
-}
-
 // Local cache
 let DB = { clients:[], campaigns:[], orders:[], demos:[], activity:[], neonAssets:[], profile:null };
 
@@ -626,7 +590,7 @@ async function attemptLogin() {
     btn.disabled = false; btn.textContent = 'Authenticate';
 
     if (error) {
-        err.textContent = 'ACCESS DENIED â ' + error.message;
+        err.textContent = 'ACCESS DENIED Ã¢ÂÂ ' + error.message;
         err.classList.remove('hidden');
         return;
     }
@@ -859,7 +823,7 @@ function handleMenuUpload(input) {
     if (input.files[0]) {
         uploadedFiles.menu = input.files[0];
         const fn = document.getElementById('menu-file-name');
-        fn.textContent = 'Uploaded: ' + input.files[0].name + ' â Items will be extracted.'; fn.classList.remove('hidden');
+        fn.textContent = 'Uploaded: ' + input.files[0].name + ' Ã¢ÂÂ Items will be extracted.'; fn.classList.remove('hidden');
     }
 }
 
@@ -1060,7 +1024,7 @@ async function submitPurchaseDB(plan) {
     await sb.from('activity_log').insert({ event_type:'order_created', title:'New '+plan+' '+ptype+' order from '+name, client_id:clientId });
 
     closeModal();
-    document.getElementById('modal-body').innerHTML = '<div class="text-center py-8"><div class="w-20 h-20 bg-green-500/10 border border-green-500/30 rounded-full flex items-center justify-center mx-auto mb-6"><i data-lucide="check-circle" class="text-green-400 w-10 h-10"></i></div><h3 class="text-2xl font-black text-white uppercase tracking-tighter mb-2">Order Confirmed</h3><p class="text-slate-400 text-sm mb-6">Neon '+ptype+' for <span class="text-white font-bold">'+name+'</span> will be live within 48 hours.</p><p class="text-cyan-400 font-bold text-lg">'+plan+' â $'+(annual?'1,000':'100')+'</p><button onclick="closeModal()" class="cyber-btn mt-8 px-12">Close</button></div>';
+    document.getElementById('modal-body').innerHTML = '<div class="text-center py-8"><div class="w-20 h-20 bg-green-500/10 border border-green-500/30 rounded-full flex items-center justify-center mx-auto mb-6"><i data-lucide="check-circle" class="text-green-400 w-10 h-10"></i></div><h3 class="text-2xl font-black text-white uppercase tracking-tighter mb-2">Order Confirmed</h3><p class="text-slate-400 text-sm mb-6">Neon '+ptype+' for <span class="text-white font-bold">'+name+'</span> will be live within 48 hours.</p><p class="text-cyan-400 font-bold text-lg">'+plan+' Ã¢ÂÂ $'+(annual?'1,000':'100')+'</p><button onclick="closeModal()" class="cyber-btn mt-8 px-12">Close</button></div>';
     document.getElementById('modal-overlay').classList.remove('hidden');
     lucide.createIcons();
 }
@@ -1085,7 +1049,7 @@ function openModal(type, data) {
         h='<h3 class="text-2xl font-black text-white uppercase tracking-tighter mb-6">Create Demo</h3><div class="space-y-4"><div><label class="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2">Demo Name</label><input id="demo-name" class="cyber-input" placeholder="e.g. Nike Pitch" /></div><div><label class="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2">Prospect</label><input id="demo-prospect" class="cyber-input" placeholder="e.g. Nike Marketing" /></div><div><label class="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2">Type</label><select id="demo-type" class="cyber-input cyber-select"><option>Logo</option><option>Menu</option><option>Image</option><option>Full_suite</option></select></div><div><label class="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-2">Duration</label><select id="demo-duration" class="cyber-input cyber-select"><option value="5">5 Minutes</option><option value="15">15 Minutes</option><option value="30" selected>30 Minutes</option><option value="60">1 Hour</option><option value="120">2 Hours</option><option value="360">6 Hours</option><option value="1440">1 Day</option><option value="4320">3 Days</option><option value="10080">7 Days</option></select></div><button onclick="createDemoDB()" class="cyber-btn w-full py-4 mt-4" style="background:#a855f7">Launch Demo</button></div>';
     } else if (type==='purchase-monthly'||type==='purchase-annual') {
         const annual=type==='purchase-annual'; const plan=annual?'annual':'monthly'; const price=annual?'$1,000/year':'$100/month';
-        h='<h3 class="text-2xl font-black text-white uppercase tracking-tighter mb-2">Order Neon</h3><p class="text-cyan-400 font-black text-lg mb-6">'+plan+' â '+price+'</p><div class="space-y-4"><div><label class="text-[10px] font-black text-cyan-500 uppercase tracking-widest block mb-2">Business Name</label><input id="p-name" class="cyber-input" /></div><div><label class="text-[10px] font-black text-cyan-500 uppercase tracking-widest block mb-2">Email</label><input id="p-email" class="cyber-input" /></div><div><label class="text-[10px] font-black text-cyan-500 uppercase tracking-widest block mb-2">Product</label><select id="p-type" class="cyber-input cyber-select"><option>Logo</option><option>Menu</option><option>Image</option>'+(annual?'<option>Full_suite</option>':'')+'</select></div><div><label class="text-[10px] font-black text-cyan-500 uppercase tracking-widest block mb-2">Address</label><input id="p-address" class="cyber-input" placeholder="123 Main St" /></div><button onclick="submitPurchaseDB(\''+plan+'\')" class="cyber-btn w-full py-4 mt-4">Confirm Order</button></div>';
+        h='<h3 class="text-2xl font-black text-white uppercase tracking-tighter mb-2">Order Neon</h3><p class="text-cyan-400 font-black text-lg mb-6">'+plan+' Ã¢ÂÂ '+price+'</p><div class="space-y-4"><div><label class="text-[10px] font-black text-cyan-500 uppercase tracking-widest block mb-2">Business Name</label><input id="p-name" class="cyber-input" /></div><div><label class="text-[10px] font-black text-cyan-500 uppercase tracking-widest block mb-2">Email</label><input id="p-email" class="cyber-input" /></div><div><label class="text-[10px] font-black text-cyan-500 uppercase tracking-widest block mb-2">Product</label><select id="p-type" class="cyber-input cyber-select"><option>Logo</option><option>Menu</option><option>Image</option>'+(annual?'<option>Full_suite</option>':'')+'</select></div><div><label class="text-[10px] font-black text-cyan-500 uppercase tracking-widest block mb-2">Address</label><input id="p-address" class="cyber-input" placeholder="123 Main St" /></div><button onclick="submitPurchaseDB(\''+plan+'\')" class="cyber-btn w-full py-4 mt-4">Confirm Order</button></div>';
     }
     body.innerHTML = h;
     document.getElementById('modal-overlay').classList.remove('hidden');
