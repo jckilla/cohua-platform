@@ -471,7 +471,7 @@
                         <div class="flex items-center gap-3"><i data-lucide="check" class="text-cyan-400 w-4 h-4"></i><span class="text-slate-300 text-sm">Custom colors</span></div>
                         <div class="flex items-center gap-3"><i data-lucide="check" class="text-cyan-400 w-4 h-4"></i><span class="text-slate-300 text-sm">Cancel anytime</span></div>
                     </div>
-                    <button onclick="openModal('purchase-monthly')" class="cyber-btn-outline w-full py-4">Select Monthly</button>
+                    <button onclick="goStripe('monthly')" class="cyber-btn-outline w-full py-4">Select Monthly</button>
                 </div>
                 <div class="pricing-card pricing-popular bg-black rounded-2xl p-10 glow-box">
                     <p class="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-2">Annual</p>
@@ -483,7 +483,7 @@
                         <div class="flex items-center gap-3"><i data-lucide="check" class="text-cyan-400 w-4 h-4"></i><span class="text-slate-300 text-sm">Priority queue</span></div>
                         <div class="flex items-center gap-3"><i data-lucide="check" class="text-cyan-400 w-4 h-4"></i><span class="text-slate-300 text-sm">Account manager</span></div>
                     </div>
-                    <button onclick="openModal('purchase-annual')" class="cyber-btn w-full py-4">Select Annual</button>
+                    <button onclick="goStripe('annual')" class="cyber-btn w-full py-4">Select Annual</button>
                 </div>
             </div>
         </div>
@@ -505,6 +505,42 @@
 const SB_URL = 'https://sgredejirqatcmstlzqi.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNncmVkZWppcnFhdGNtc3RsenFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDY3NTUsImV4cCI6MjA4ODU4Mjc1NX0.bV19P9HmMSDe4JGAmJHcmCIjN3kbZvHTuurmCRVD_sA';
 const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// ============================================================
+// STRIPE PAYMENT LINKS (Test/Sandbox Mode)
+// ============================================================
+const STRIPE_LINKS = {
+    monthly: 'https://buy.stripe.com/test_eVqdR83M0gRGf716nycIE00',
+    annual:  'https://buy.stripe.com/test_fZu14mdmA44Uf716nycIE01'
+};
+const STRIPE_SUCCESS_URL = 'https://cohua-platform.vercel.app/?payment=success';
+const STRIPE_CANCEL_URL  = 'https://cohua-platform.vercel.app/?payment=cancelled';
+
+function goStripe(plan) {
+    const link = STRIPE_LINKS[plan];
+    if (!link) {
+        alert('Payment link not configured yet. Contact admin@cohua.global');
+        return;
+    }
+    window.open(link, '_blank');
+}
+
+// Check for payment return
+function checkPaymentReturn() {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('payment');
+    if (status === 'success') {
+        setTimeout(() => {
+            alert('Payment received! Your neon order is being processed.');
+            window.history.replaceState({}, '', window.location.pathname);
+        }, 500);
+    } else if (status === 'cancelled') {
+        setTimeout(() => {
+            alert('Payment was cancelled. You can try again anytime from the Neon Store.');
+            window.history.replaceState({}, '', window.location.pathname);
+        }, 500);
+    }
+}
 
 // Local cache
 let DB = { clients:[], campaigns:[], orders:[], demos:[], activity:[], neonAssets:[], profile:null };
@@ -1040,7 +1076,7 @@ setInterval(() => { if(DB.profile && DB.demos.some(d=>d.status==='active')) { re
 // ============================================================
 // INIT
 // ============================================================
-document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); checkSession(); });
+document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); checkPaymentReturn(); checkSession(); });
 document.getElementById('modal-overlay').addEventListener('click', e => { if(e.target===document.getElementById('modal-overlay')) closeModal(); });
 </script>
 </body>
