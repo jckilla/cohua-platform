@@ -19,50 +19,79 @@
         }
     </script>
     <style>
-        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
         .neon-text-blue { text-shadow: 0 0 10px rgba(0, 243, 255, 0.7), 0 0 20px rgba(0, 243, 255, 0.5); }
         .neon-border:hover { box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); border-color: rgba(0, 243, 255, 0.6); }
         .ar-glow-blue { box-shadow: 0 0 15px rgba(0, 243, 255, 0.6), inset 0 0 10px rgba(0, 243, 255, 0.4); text-shadow: 0 0 8px rgba(0, 243, 255, 0.8); }
         .ar-glow-magenta { box-shadow: 0 0 15px rgba(255, 0, 255, 0.6), inset 0 0 10px rgba(255, 0, 255, 0.4); text-shadow: 0 0 8px rgba(255, 0, 255, 0.8); }
         .ar-glow-green { box-shadow: 0 0 15px rgba(0, 255, 102, 0.6), inset 0 0 10px rgba(0, 255, 102, 0.4); text-shadow: 0 0 8px rgba(0, 255, 102, 0.8); }
         .ar-glow-yellow { box-shadow: 0 0 15px rgba(255, 215, 0, 0.6), inset 0 0 10px rgba(255, 215, 0, 0.4); text-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
+
+        /* Video hero styling */
         .hero-video-container { position: relative; border-radius: 16px; overflow: hidden; box-shadow: 0 0 60px rgba(0, 243, 255, 0.15), 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
         .hero-video-container video { width: 100%; height: 100%; object-fit: cover; display: block; }
         .hero-video-container::after { content: ''; position: absolute; inset: 0; border-radius: 16px; border: 1px solid rgba(0, 243, 255, 0.2); pointer-events: none; }
     </style>
 </head>
 <body class="bg-gray-950 text-gray-100 antialiased overflow-x-hidden">
+
+    <!-- NAV -->
     <nav class="fixed w-full z-50 glass-card px-6 py-4 flex justify-between items-center">
         <div class="text-2xl font-bold tracking-widest text-white">COHUA<span class="text-neon-blue">.</span></div>
         <div class="space-x-6">
             <a href="#" class="hover:text-neon-blue transition">Neon Store</a>
-            <a href="/login" class="px-5 py-2 rounded-full border border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-gray-900 transition font-semibold neon-border">Login</a>
+            <a href="#claim" class="px-5 py-2 rounded-full border border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-gray-900 transition font-semibold neon-border">Get Started</a>
         </div>
     </nav>
+
+    <!-- HERO -->
     <section class="relative min-h-screen flex items-center justify-center px-6 pt-20">
         <div class="absolute inset-0 z-0 overflow-hidden">
             <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-neon-magenta/20 rounded-full blur-[120px]"></div>
             <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-neon-blue/20 rounded-full blur-[120px]"></div>
         </div>
         <div class="relative z-10 max-w-4xl mx-auto text-center">
-            <h1 class="text-5xl md:text-7xl font-bold mb-6 tracking-tight">Your Brand. <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-magenta neon-text-blue">Glowing in Reality.</span></h1>
-            <p class="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">We bridge the physical and digital world by anchoring custom Augmented Reality neon logos, menus, and displays to your exact GPS coordinates. Capture attention, dominate your airspace, and drive massive foot traffic.</p>
-            <a href="#claim" class="inline-block px-8 py-4 rounded-full bg-white text-gray-950 font-bold text-lg hover:scale-105 transition transform shadow-[0_0_20px_rgba(255,255,255,0.3)]">Enter the Layer</a>
+            <h1 class="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
+                Your Brand. <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-magenta neon-text-blue">Glowing in Reality.</span>
+            </h1>
+            <p class="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+                We bridge the physical and digital world by anchoring custom Augmented Reality neon logos, menus, and displays to your exact GPS coordinates. Capture attention, dominate your airspace, and drive massive foot traffic.
+            </p>
+            <a href="https://buy.stripe.com/test_eVqdR83M0gRGf716nycIE00" target="_blank" class="inline-block px-8 py-4 rounded-full bg-white text-gray-950 font-bold text-lg hover:scale-105 transition transform shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                Enter the Layer
+            </a>
         </div>
     </section>
+
+    <!-- ============================================================ -->
+    <!-- AR GLASSES HERO VISUAL -->
+    <!-- ============================================================ -->
     <section class="py-20 px-6 bg-gray-900/50 relative border-t border-white/5">
         <div class="max-w-5xl mx-auto">
+
+            <!-- AR Glasses Hero Video -->
             <div class="hero-video-container mb-12">
                 <video autoplay loop muted playsinline>
-                    <source src="ar-glasses-hero.mp4" type="video/mp4">
+                    <source src="Augmented_Reality_Smart_Glasses_Video.mp4" type="video/mp4">
                 </video>
             </div>
+
+            <!-- Text below the visual -->
             <div class="text-center">
                 <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Turn Views into Foot Traffic.</h2>
-                <p class="text-gray-400 max-w-3xl mx-auto text-lg">Our spatial technology captures the attention of passersby wearing AR glasses, creating interactive waypoints that physically guide them through your front doors.</p>
+                <p class="text-gray-400 max-w-3xl mx-auto text-lg">
+                    Our spatial technology captures the attention of passersby wearing AR glasses, creating interactive waypoints that physically guide them through your front doors.
+                </p>
             </div>
         </div>
     </section>
+
+    <!-- USE CASES -->
     <section class="py-24 px-6 relative">
         <div class="max-w-7xl mx-auto">
             <div class="text-center mb-16">
@@ -70,20 +99,103 @@
                 <p class="text-gray-400 text-lg">Tailored spatial infrastructure for every industry.</p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="glass-card rounded-2xl neon-border transition duration-500 overflow-hidden flex flex-col group border-white/10 hover:border-neon-blue/50"><div class="h-56 w-full relative overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-800"></div><div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="px-6 py-3 border-2 border-neon-blue text-neon-blue font-bold rounded-xl bg-black/40 backdrop-blur-sm transform -rotate-3 ar-glow-blue text-xl tracking-wider">WINTER SALE 50% OFF</div></div></div><div class="p-8 flex-1 bg-gray-900/80"><h3 class="text-2xl font-bold mb-2 text-white flex items-center gap-3"><span class="text-neon-blue">&#x1F3EA;</span> Regular Businesses</h3><p class="text-neon-blue text-sm mb-4 tracking-wide font-semibold">"Stand Out on the Street."</p><p class="text-gray-400 leading-relaxed">Turn everyday storefronts into interactive landmarks. Broadcast glowing 3D logos and promotions that grab attention from blocks away, instantly increasing walk-in customers.</p></div></div>
-                <div class="glass-card rounded-2xl transition duration-500 overflow-hidden flex flex-col group border border-white/10 hover:border-neon-magenta/50 hover:shadow-[0_0_15px_rgba(255,0,255,0.3)]"><div class="h-56 w-full relative overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-800"></div><div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="px-5 py-4 border-2 border-neon-magenta text-neon-magenta font-bold rounded-lg bg-black/60 backdrop-blur-md transform rotate-2 ar-glow-magenta text-center"><div class="text-sm tracking-widest mb-1 opacity-80">DAILY SPECIAL</div><div class="text-2xl">TRUFFLE PASTA $22</div></div></div></div><div class="p-8 flex-1 bg-gray-900/80"><h3 class="text-2xl font-bold mb-2 text-white flex items-center gap-3"><span class="text-neon-magenta">&#x1F37D;&#xFE0F;</span> Restaurants & Cafes</h3><p class="text-neon-magenta text-sm mb-4 tracking-wide font-semibold">"Floating Menus of the Day."</p><p class="text-gray-400 leading-relaxed">Capture hungry foot traffic by projecting your daily specials and interactive neon menus right outside your door-visible and exclusive to users wearing AR glasses as they walk by.</p></div></div>
-                <div class="glass-card rounded-2xl transition duration-500 overflow-hidden flex flex-col group border border-white/10 hover:border-neon-green/50 hover:shadow-[0_0_15px_rgba(0,255,102,0.3)]"><div class="h-56 w-full relative overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-800"></div><div class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="w-48 h-24 border-2 border-neon-green text-neon-green font-bold rounded bg-black/30 backdrop-blur-sm flex items-center justify-center ar-glow-green text-3xl tracking-widest relative">COHUA<div class="absolute -bottom-6 text-xs text-neon-green/80 tracking-widest font-mono">SITE 04 &#x2022; ZONE B</div></div></div></div><div class="p-8 flex-1 bg-gray-900/80"><h3 class="text-2xl font-bold mb-2 text-white flex items-center gap-3"><span class="text-neon-green">&#x1F3D7;&#xFE0F;</span> Construction Sites</h3><p class="text-neon-green text-sm mb-4 tracking-wide font-semibold">"Own the Skyline."</p><p class="text-gray-400 leading-relaxed">Don't let your project go unnoticed behind a fence. Project massive, glowing neon company logos and future building renders towering over active construction sites for ultimate brand visibility.</p></div></div>
-                <div class="glass-card rounded-2xl transition duration-500 overflow-hidden flex flex-col group border border-white/10 hover:border-neon-yellow/50 hover:shadow-[0_0_15px_rgba(255,215,0,0.3)]"><div class="h-56 w-full relative overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-800"></div><div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-2"><div class="px-6 py-2 border-2 border-neon-yellow text-neon-yellow font-bold rounded-full bg-black/50 backdrop-blur-md ar-glow-yellow text-xl tracking-wider">OPEN HOUSE</div><div class="text-neon-yellow font-bold text-3xl animate-bounce drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]">&#x2193;</div></div></div><div class="p-8 flex-1 bg-gray-900/80"><h3 class="text-2xl font-bold mb-2 text-white flex items-center gap-3"><span class="text-neon-yellow">&#x1F3E1;</span> Real Estate</h3><p class="text-neon-yellow text-sm mb-4 tracking-wide font-semibold">"The Future of Property Showings."</p><p class="text-gray-400 leading-relaxed">Guide potential buyers directly to your open house with floating neon directional arrows. Display glowing property stats, pricing, and agent contact info hovering perfectly over the front lawn.</p></div></div>
+                <!-- Retail -->
+                <div class="glass-card rounded-2xl neon-border transition duration-500 overflow-hidden flex flex-col group border-white/10 hover:border-neon-blue/50">
+                    <div class="h-56 w-full relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-800"></div>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div class="px-6 py-3 border-2 border-neon-blue text-neon-blue font-bold rounded-xl bg-black/40 backdrop-blur-sm transform -rotate-3 ar-glow-blue text-xl tracking-wider">
+                                WINTER SALE 50% OFF
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-8 flex-1 bg-gray-900/80">
+                        <h3 class="text-2xl font-bold mb-2 text-white flex items-center gap-3">
+                            <span class="text-neon-blue">&#x1F3EA;</span> Regular Businesses
+                        </h3>
+                        <p class="text-neon-blue text-sm mb-4 tracking-wide font-semibold">"Stand Out on the Street."</p>
+                        <p class="text-gray-400 leading-relaxed">Turn everyday storefronts into interactive landmarks. Broadcast glowing 3D logos and promotions that grab attention from blocks away, instantly increasing walk-in customers.</p>
+                    </div>
+                </div>
+                <!-- Restaurants -->
+                <div class="glass-card rounded-2xl transition duration-500 overflow-hidden flex flex-col group border border-white/10 hover:border-neon-magenta/50 hover:shadow-[0_0_15px_rgba(255,0,255,0.3)]">
+                    <div class="h-56 w-full relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-800"></div>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div class="px-5 py-4 border-2 border-neon-magenta text-neon-magenta font-bold rounded-lg bg-black/60 backdrop-blur-md transform rotate-2 ar-glow-magenta text-center">
+                                <div class="text-sm tracking-widest mb-1 opacity-80">DAILY SPECIAL</div>
+                                <div class="text-2xl">TRUFFLE PASTA $22</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-8 flex-1 bg-gray-900/80">
+                        <h3 class="text-2xl font-bold mb-2 text-white flex items-center gap-3">
+                            <span class="text-neon-magenta">&#x1F37D;&#xFE0F;</span> Restaurants & Cafes
+                        </h3>
+                        <p class="text-neon-magenta text-sm mb-4 tracking-wide font-semibold">"Floating Menus of the Day."</p>
+                        <p class="text-gray-400 leading-relaxed">Capture hungry foot traffic by projecting your daily specials and interactive neon menus right outside your doorâvisible and exclusive to users wearing AR glasses as they walk by.</p>
+                    </div>
+                </div>
+                <!-- Construction -->
+                <div class="glass-card rounded-2xl transition duration-500 overflow-hidden flex flex-col group border border-white/10 hover:border-neon-green/50 hover:shadow-[0_0_15px_rgba(0,255,102,0.3)]">
+                    <div class="h-56 w-full relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-800"></div>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div class="w-48 h-24 border-2 border-neon-green text-neon-green font-bold rounded bg-black/30 backdrop-blur-sm flex items-center justify-center ar-glow-green text-3xl tracking-widest relative">
+                                COHUA
+                                <div class="absolute -bottom-6 text-xs text-neon-green/80 tracking-widest font-mono">SITE 04 &bull; ZONE B</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-8 flex-1 bg-gray-900/80">
+                        <h3 class="text-2xl font-bold mb-2 text-white flex items-center gap-3">
+                            <span class="text-neon-green">&#x1F3D7;&#xFE0F;</span> Construction Sites
+                        </h3>
+                        <p class="text-neon-green text-sm mb-4 tracking-wide font-semibold">"Own the Skyline."</p>
+                        <p class="text-gray-400 leading-relaxed">Don't let your project go unnoticed behind a fence. Project massive, glowing neon company logos and future building renders towering over active construction sites for ultimate brand visibility.</p>
+                    </div>
+                </div>
+                <!-- Real Estate -->
+                <div class="glass-card rounded-2xl transition duration-500 overflow-hidden flex flex-col group border border-white/10 hover:border-neon-yellow/50 hover:shadow-[0_0_15px_rgba(255,215,0,0.3)]">
+                    <div class="h-56 w-full relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-800"></div>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-2">
+                            <div class="px-6 py-2 border-2 border-neon-yellow text-neon-yellow font-bold rounded-full bg-black/50 backdrop-blur-md ar-glow-yellow text-xl tracking-wider">
+                                OPEN HOUSE
+                            </div>
+                            <div class="text-neon-yellow font-bold text-3xl animate-bounce drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]">
+                                &#x2193;
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-8 flex-1 bg-gray-900/80">
+                        <h3 class="text-2xl font-bold mb-2 text-white flex items-center gap-3">
+                            <span class="text-neon-yellow">&#x1F3E1;</span> Real Estate
+                        </h3>
+                        <p class="text-neon-yellow text-sm mb-4 tracking-wide font-semibold">"The Future of Property Showings."</p>
+                        <p class="text-gray-400 leading-relaxed">Guide potential buyers directly to your open house with floating neon directional arrows. Display glowing property stats, pricing, and agent contact info hovering perfectly over the front lawn.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
+
+    <!-- CTA -->
     <section id="claim" class="py-32 px-6 text-center relative overflow-hidden border-t border-white/5">
         <div class="absolute inset-0 bg-gradient-to-b from-transparent to-neon-blue/10 pointer-events-none"></div>
         <div class="relative z-10 max-w-3xl mx-auto">
             <h2 class="text-5xl font-bold mb-8">Ready to dominate your airspace?</h2>
             <p class="text-xl text-gray-400 mb-10">Connect your brand to the spatial layer today.</p>
-            <a href="/login" class="inline-block px-10 py-5 rounded-full bg-transparent border-2 border-neon-blue text-neon-blue font-bold text-xl hover:bg-neon-blue hover:text-gray-900 transition shadow-[0_0_15px_rgba(0,243,255,0.4)] hover:shadow-[0_0_30px_rgba(0,243,255,0.8)]">Claim Your Coordinates</a>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="https://buy.stripe.com/test_eVqdR83M0gRGf716nycIE00" target="_blank" class="inline-block px-10 py-5 rounded-full bg-neon-blue text-gray-900 font-bold text-xl hover:bg-white transition shadow-[0_0_15px_rgba(0,243,255,0.4)] hover:shadow-[0_0_30px_rgba(0,243,255,0.8)]">
+                    Monthly - $100/mo
+                </a>
+                <a href="https://buy.stripe.com/test_fZu14mdmA44Uf716nycIE01" target="_blank" class="inline-block px-10 py-5 rounded-full bg-transparent border-2 border-neon-blue text-neon-blue font-bold text-xl hover:bg-neon-blue hover:text-gray-900 transition shadow-[0_0_15px_rgba(0,243,255,0.4)] hover:shadow-[0_0_30px_rgba(0,243,255,0.8)]">
+                    Annual - $1,000/yr
+                </a>
+            </div>
         </div>
     </section>
+
 </body>
 </html>
