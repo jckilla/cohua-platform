@@ -174,16 +174,16 @@
         const SUPABASE_URL = 'https://sgredejirqatcmstlzqi.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNncmVkZWppcnFhdGNtc3RsenFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDY3NTUsImV4cCI6MjA4ODU4Mjc1NX0.bV19P9HmMSDe4JGAmJHcmCIjN3kbZvHTuurmCRVD_sA';
 
-        let supabase = null;
+        let supabaseClient = null;
         let supabaseReady = false;
 
         // Initialize Supabase if credentials are configured
         if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             supabaseReady = true;
 
             // Check if user is already logged in
-            supabase.auth.getSession().then(({ data: { session } }) => {
+            supabaseClient.auth.getSession().then(({ data: { session } }) => {
                 if (session) {
                     window.location.href = '/dashboard';
                 }
@@ -243,7 +243,7 @@
             hideStatus();
 
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                 if (error) throw error;
                 showStatus('Login successful! Redirecting...');
                 setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
@@ -271,7 +271,7 @@
             hideStatus();
 
             try {
-                const { data, error } = await supabase.auth.signUp({ email, password });
+                const { data, error } = await supabaseClient.auth.signUp({ email, password });
                 if (error) throw error;
                 showStatus('Account created! Check your email to confirm, then sign in.');
                 btn.disabled = false;
