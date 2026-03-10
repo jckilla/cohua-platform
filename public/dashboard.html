@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COHUA | Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Space Grotesk', 'sans-serif'] },
+                    colors: {
+                        neon: { blue: '#00f3ff', magenta: '#ff00ff', green: '#00ff66', yellow: '#ffd700' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .neon-text-blue { text-shadow: 0 0 10px rgba(0, 243, 255, 0.7), 0 0 20px rgba(0, 243, 255, 0.5); }
+        .neon-border-hover:hover { box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); border-color: rgba(0, 243, 255, 0.6); }
+        .sidebar-link {
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-link:hover, .sidebar-link.active {
+            background: rgba(0, 243, 255, 0.08);
+            border-left-color: #00f3ff;
+            color: #00f3ff;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s;
+        }
+        .stat-card:hover {
+            border-color: rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+        }
+        .btn-neon {
+            background: #00f3ff;
+            color: #111;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+            transition: all 0.3s;
+        }
+        .btn-neon:hover {
+            background: #fff;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.8);
+        }
+        .table-row:hover {
+            background: rgba(0, 243, 255, 0.05);
+        }
+        .status-active {
+            background: rgba(0, 255, 102, 0.15);
+            color: #00ff66;
+            border: 1px solid rgba(0, 255, 102, 0.3);
+        }
+        .status-pending {
+            background: rgba(255, 215, 0, 0.15);
+            color: #ffd700;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        .status-draft {
+            background: rgba(255, 255, 255, 0.08);
+            color: #999;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 antialiased overflow-x-hidden min-h-screen flex">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-gray-950 border-r border-gray-800 min-h-screen flex flex-col fixed left-0 top-0 z-20">
+        <!-- Logo -->
+        <div class="p-6 border-b border-gray-800">
+            <a href="/" class="text-2xl font-bold tracking-tight">COHUA<span class="text-neon-blue">.</span></a>
+        </div>
+
+        <!-- Nav Links -->
+        <nav class="flex-1 py-4">
+            <a href="#" class="sidebar-link active flex items-center gap-3 px-6 py-3 text-sm font-medium">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium text-gray-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                AR Campaigns
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium text-gray-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Locations
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium text-gray-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Analytics
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium text-gray-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Settings
+            </a>
+        </nav>
+
+        <!-- User Section -->
+        <div class="p-4 border-t border-gray-800">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-neon-blue/20 flex items-center justify-center text-neon-blue text-sm font-bold" id="user-avatar">?</div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium truncate" id="user-email">Loading...</p>
+                    <p class="text-xs text-gray-500">Free Plan</p>
+                </div>
+                <button onclick="signOut()" class="text-gray-500 hover:text-red-400 transition-colors" title="Sign Out">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 ml-64">
+        <!-- Top Bar -->
+        <header class="sticky top-0 z-10 bg-gray-950/80 backdrop-blur-md border-b border-gray-800 px-8 py-4 flex items-center justify-between">
+            <div>
+                <h1 class="text-xl font-bold">Dashboard</h1>
+                <p class="text-sm text-gray-500">Welcome back to your COHUA command center</p>
+            </div>
+            <button class="btn-neon px-5 py-2 rounded-lg text-sm font-semibold">
+                + New Campaign
+            </button>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="p-8">
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="stat-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-gray-400 text-sm">Active Campaigns</span>
+                        <div class="w-10 h-10 rounded-lg bg-neon-blue/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-neon-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold">0</p>
+                    <p class="text-xs text-gray-500 mt-1">Create your first AR campaign</p>
+                </div>
+
+                <div class="stat-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-gray-400 text-sm">Total Views</span>
+                        <div class="w-10 h-10 rounded-lg bg-neon-magenta/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-neon-magenta" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold">0</p>
+                    <p class="text-xs text-gray-500 mt-1">AR experience impressions</p>
+                </div>
+
+                <div class="stat-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-gray-400 text-sm">Locations</span>
+                        <div class="w-10 h-10 rounded-lg bg-neon-green/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold">0</p>
+                    <p class="text-xs text-gray-500 mt-1">GPS-anchored AR spots</p>
+                </div>
+
+                <div class="stat-card rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-gray-400 text-sm">Engagement Rate</span>
+                        <div class="w-10 h-10 rounded-lg bg-neon-yellow/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-neon-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold">--</p>
+                    <p class="text-xs text-gray-500 mt-1">No data yet</p>
+                </div>
+            </div>
+
+            <!-- Quick Actions + Recent Activity -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Quick Actions -->
+                <div class="glass-card rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4">Quick Actions</h2>
+                    <div class="space-y-3">
+                        <button class="w-full text-left flex items-center gap-3 p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors group">
+                            <div class="w-10 h-10 rounded-lg bg-neon-blue/10 flex items-center justify-center group-hover:bg-neon-blue/20 transition-colors">
+                                <svg class="w-5 h-5 text-neon-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">Create AR Campaign</p>
+                                <p class="text-xs text-gray-500">Design a new neon AR experience</p>
+                            </div>
+                        </button>
+                        <button class="w-full text-left flex items-center gap-3 p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors group">
+                            <div class="w-10 h-10 rounded-lg bg-neon-green/10 flex items-center justify-center group-hover:bg-neon-green/20 transition-colors">
+                                <svg class="w-5 h-5 text-neon-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">Add Location</p>
+                                <p class="text-xs text-gray-500">Pin AR content to GPS coordinates</p>
+                            </div>
+                        </button>
+                        <button class="w-full text-left flex items-center gap-3 p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors group">
+                            <div class="w-10 h-10 rounded-lg bg-neon-magenta/10 flex items-center justify-center group-hover:bg-neon-magenta/20 transition-colors">
+                                <svg class="w-5 h-5 text-neon-magenta" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">Upload 3D Asset</p>
+                                <p class="text-xs text-gray-500">Add neon logos, menus, or displays</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Campaigns (empty state) -->
+                <div class="glass-card rounded-xl p-6 lg:col-span-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold">Recent Campaigns</h2>
+                        <a href="#" class="text-neon-blue text-sm hover:underline">View all</a>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="flex flex-col items-center justify-center py-12 text-center" id="empty-campaigns">
+                        <div class="w-20 h-20 rounded-full bg-gray-800/50 flex items-center justify-center mb-4">
+                            <svg class="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-300 mb-2">No campaigns yet</h3>
+                        <p class="text-sm text-gray-500 max-w-sm mb-6">Launch your first AR campaign to start anchoring neon displays to real-world locations.</p>
+                        <button class="btn-neon px-6 py-2.5 rounded-lg text-sm font-semibold">
+                            Create Your First Campaign
+                        </button>
+                    </div>
+
+                    <!-- Campaign Table (hidden by default, shown when campaigns exist) -->
+                    <div class="hidden" id="campaigns-table">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-gray-800">
+                                        <th class="pb-3 pr-4">Campaign</th>
+                                        <th class="pb-3 pr-4">Status</th>
+                                        <th class="pb-3 pr-4">Views</th>
+                                        <th class="pb-3">Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="campaigns-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Getting Started Guide -->
+            <div class="glass-card rounded-xl p-6">
+                <h2 class="text-lg font-semibold mb-4">Getting Started with COHUA</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="flex items-start gap-4 p-4 rounded-lg bg-gray-800/30">
+                        <div class="w-8 h-8 rounded-full bg-neon-blue/20 flex items-center justify-center text-neon-blue font-bold text-sm flex-shrink-0">1</div>
+                        <div>
+                            <h3 class="text-sm font-semibold mb-1">Create a Campaign</h3>
+                            <p class="text-xs text-gray-500">Choose your AR neon display type: logo, menu, sign, or custom 3D asset.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4 p-4 rounded-lg bg-gray-800/30">
+                        <div class="w-8 h-8 rounded-full bg-neon-magenta/20 flex items-center justify-center text-neon-magenta font-bold text-sm flex-shrink-0">2</div>
+                        <div>
+                            <h3 class="text-sm font-semibold mb-1">Set Your Location</h3>
+                            <p class="text-xs text-gray-500">Pin your AR experience to exact GPS coordinates at your storefront or venue.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4 p-4 rounded-lg bg-gray-800/30">
+                        <div class="w-8 h-8 rounded-full bg-neon-green/20 flex items-center justify-center text-neon-green font-bold text-sm flex-shrink-0">3</div>
+                        <div>
+                            <h3 class="text-sm font-semibold mb-1">Go Live</h3>
+                            <p class="text-xs text-gray-500">Share your AR link. Customers point their phone and see your brand glow in reality.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const SUPABASE_URL = 'https://sgredejirqatcmstlzqi.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNncmVkZWppcnFhdGNtc3RsenFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDY3NTUsImV4cCI6MjA4ODU4Mjc1NX0.bV19P9HmMSDe4JGAmJHcmCIjN3kbZvHTuurmCRVD_sA';
+
+        let supabaseClient = null;
+
+        // Initialize Supabase
+        if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        // Auth guard - redirect to login if not authenticated
+        async function checkAuth() {
+            if (!supabaseClient) {
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                if (!session) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                // Set user info in sidebar
+                const email = session.user.email;
+                document.getElementById('user-email').textContent = email;
+                document.getElementById('user-avatar').textContent = email.charAt(0).toUpperCase();
+            } catch (err) {
+                console.error('Auth check failed:', err);
+                window.location.href = '/login';
+            }
+        }
+
+        // Sign out
+        async function signOut() {
+            if (supabaseClient) {
+                await supabaseClient.auth.signOut();
+            }
+            window.location.href = '/login';
+        }
+
+        // Initialize
+        checkAuth();
+    </script>
+</body>
+</html>
