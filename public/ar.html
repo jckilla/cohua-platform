@@ -8,7 +8,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>COHUA AR</title>
 
-  <!-- A-Frame 1.3.0 (stable) + AR.js 2.x (stable GPS components: gps-camera + gps-entity-place) -->
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -16,8 +15,6 @@
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     html, body { width:100%; height:100%; overflow:hidden; background:#000; font-family:'Segoe UI',sans-serif; }
-
-    /* Startup screen */
     #startup {
       position:fixed; inset:0; z-index:9999;
       background:#000;
@@ -33,12 +30,7 @@
     .s-steps { margin-top:28px; text-align:left; max-width:280px; }
     .s-step { font-size:12px; color:#444; padding:6px 0; border-bottom:1px solid #111; display:flex; gap:10px; }
     .s-step span { color:#00f3ff; font-weight:700; }
-
-    /* HUD */
-    #hud {
-      position:fixed; top:0; left:0; right:0; z-index:8000;
-      pointer-events:none;
-    }
+    #hud { position:fixed; top:0; left:0; right:0; z-index:8000; pointer-events:none; }
     #hud-bar {
       background:rgba(0,0,0,0.8); backdrop-filter:blur(12px);
       padding:10px 16px;
@@ -52,8 +44,6 @@
     .hud-yellow { color:#ffd700; }
     .hud-red { color:#ff4466; }
     .hud-gray { color:#555; }
-
-    /* Nearby cards strip */
     #cards-strip {
       position:fixed; bottom:0; left:0; right:0; z-index:8000;
       padding:10px 10px 20px;
@@ -70,8 +60,6 @@
     .ncard-name { font-size:12px; font-weight:700; color:#fff; margin-bottom:4px; }
     .ncard-dist { font-size:11px; font-weight:600; margin-bottom:2px; }
     .ncard-loc  { font-size:10px; color:#555; }
-
-    /* No-signal banner */
     #no-signal {
       position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
       z-index:8000; display:none;
@@ -83,14 +71,11 @@
 </head>
 <body>
 
-<!-- STARTUP SCREEN -->
 <div id="startup">
   <div class="s-logo">COHUA</div>
   <div class="s-sub">Augmented Reality Ad Network</div>
-
   <button class="s-btn" id="start-btn" onclick="startAR()">&#x1F4F7; &nbsp;Open AR Camera</button>
   <p class="s-msg" id="start-msg">Camera &amp; location required</p>
-
   <div class="s-steps">
     <div class="s-step"><span>1</span> Allow camera access when prompted</div>
     <div class="s-step"><span>2</span> Allow location access when prompted</div>
@@ -98,7 +83,6 @@
   </div>
 </div>
 
-<!-- HUD (shown after AR starts) -->
 <div id="hud" style="display:none">
   <div id="hud-bar">
     <div id="hud-logo">COHUA</div>
@@ -109,21 +93,12 @@
   </div>
 </div>
 
-<!-- Cards strip -->
 <div id="cards-strip">
   <div id="cards-row"></div>
 </div>
 
-<!-- No signal -->
-<div id="no-signal">No AR ads within 1,000 ft</div>
+<div id="no-signal">No AR ads within 3,000 ft</div>
 
-<!-- A-FRAME SCENE (GPS mode) -->
-<!--
-  KEY: arjs uses 'sourceType: webcam' for camera passthrough.
-  Camera entity uses 'gps-camera' (NOT gps-projected-camera).
-  Entities use 'gps-entity-place' (NOT gps-projected-entity-place).
-  These are the STABLE AR.js 3.x GPS components.
--->
 <a-scene
   id="main-scene"
   vr-mode-ui="enabled:false"
@@ -138,19 +113,19 @@
 </a-scene>
 
 <script>
-const SUPABASE_URL  = 'https://sgredejirqatcmstlzqi.supabase.co';
-const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNncmVkZWppcnFhdGNtc3RsenFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDY3NTUsImV4cCI6MjA4ODU4Mjc1NX0.bV19P9HmMSDe4JGAmJHcmCIjN3kbZvHTuurmCRVD_sA';
+const SUPABASE_URL = 'https://sgredejirqatcmstlzqi.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNncmVkZWppcnFhdGNtc3RsenFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDY3NTUsImV4cCI6MjA4ODU4Mjc1NX0.bV19P9HmMSDe4JGAmJHcmCIjN3kbZvHTuurmCRVD_sA';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const RADIUS_M   = 305;   // 1000 feet
-const SCAN_EVERY = 8000;  // ms
+const RADIUS_M   = 914;   // 3000 feet
+const SIGN_Y     = 7;     // meters above ground
+const SCAN_EVERY = 8000;
 
 let lat = null, lng = null;
 let gpsWatch = null;
 let scanTimer = null;
 let running = false;
 
-// ── HAVERSINE ─────────────────────────────────────────────────────────────────
 function haversine(lat1,lon1,lat2,lon2){
   const R=6371000, r=Math.PI/180;
   const dLat=(lat2-lat1)*r, dLon=(lon2-lon1)*r;
@@ -159,38 +134,30 @@ function haversine(lat1,lon1,lat2,lon2){
 }
 const toFt = m => Math.round(m*3.28084);
 
-// ── NEON COLOR ────────────────────────────────────────────────────────────────
 function neonColor(c){
   try { return JSON.parse(c.deploy_payload||'{}').neon_color||'#00f3ff'; }
-  catch{ return '#00f3ff'; }
+  catch { return '#00f3ff'; }
 }
 
-// ── MAIN START ────────────────────────────────────────────────────────────────
 async function startAR(){
   const btn = document.getElementById('start-btn');
   const msg = document.getElementById('start-msg');
   btn.disabled = true; btn.textContent = 'Starting...';
   msg.textContent = 'Requesting camera access...';
-
-  // 1. Camera permission
   try {
     await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
   } catch(e){
     msg.textContent = 'Camera denied. Allow camera access in browser settings and refresh.';
-    btn.disabled=false; btn.textContent='\uD83D\uDCF7 Open AR Camera';
-    return;
+    btn.disabled=false; btn.textContent='\uD83D\uDCF7 Open AR Camera'; return;
   }
-
-  // 2. GPS permission
   if(!navigator.geolocation){
     msg.textContent='GPS not supported on this device.';
     btn.disabled=false; return;
   }
   msg.textContent='Getting your location...';
-
   navigator.geolocation.getCurrentPosition(
     pos => { lat=pos.coords.latitude; lng=pos.coords.longitude; _launch(); },
-    ()  => {
+    () => {
       msg.textContent='Location denied. Enable location and refresh.';
       btn.disabled=false; btn.textContent='\uD83D\uDCF7 Open AR Camera';
     },
@@ -203,8 +170,6 @@ function _launch(){
   document.getElementById('startup').classList.add('hidden');
   document.getElementById('hud').style.display='block';
   document.getElementById('main-scene').style.display='block';
-
-  // Start GPS watch
   gpsWatch = navigator.geolocation.watchPosition(
     pos=>{
       lat=pos.coords.latitude; lng=pos.coords.longitude;
@@ -214,53 +179,45 @@ function _launch(){
     },
     ()=>{
       const el=document.getElementById('hud-gps');
-      el.textContent='\u25CF GPS lost';
-      el.className='hud-line hud-red';
+      el.textContent='\u25CF GPS lost'; el.className='hud-line hud-red';
     },
     {enableHighAccuracy:true, timeout:5000, maximumAge:2000}
   );
-
   scan();
   scanTimer = setInterval(scan, SCAN_EVERY);
 }
 
-// ── SCAN SUPABASE ─────────────────────────────────────────────────────────────
 async function scan(){
   if(!lat||!lng) return;
   document.getElementById('hud-ads').textContent='Scanning...';
-
   const {data,error} = await sb
     .from('campaigns')
     .select('id,name,asset_type,latitude,longitude,location_label,deploy_payload')
     .eq('status','live')
     .not('latitude','is',null);
-
   if(error){ console.error(error); return; }
-
   const nearby = (data||[])
     .map(c=>({...c, _m: haversine(lat,lng,c.latitude,c.longitude)}))
     .filter(c=>c._m<=RADIUS_M)
     .sort((a,b)=>a._m-b._m);
-
   const adsEl = document.getElementById('hud-ads');
   if(nearby.length){
     adsEl.textContent=`${nearby.length} AR ad${nearby.length>1?'s':''} nearby`;
     adsEl.className='hud-line hud-green';
     document.getElementById('no-signal').style.display='none';
   } else {
-    adsEl.textContent='No AR ads within 1,000 ft';
+    adsEl.textContent='No AR ads within 3,000 ft';
     adsEl.className='hud-line hud-gray';
     document.getElementById('no-signal').style.display='block';
   }
-
   renderAREntities(nearby);
   renderCards(nearby);
 }
 
-// ── RENDER A-FRAME ENTITIES ───────────────────────────────────────────────────
 function renderAREntities(campaigns){
   const root = document.getElementById('ar-root');
   root.innerHTML = '';
+  const Y = SIGN_Y; // 7 meters — sign center height
 
   campaigns.forEach(c=>{
     const color = neonColor(c);
@@ -272,84 +229,77 @@ function renderAREntities(campaigns){
       neon_image:'NEON IMAGE', custom_3d:'3D AD'
     }[c.asset_type]||'AR AD';
 
-    /*
-     * gps-entity-place = stable AR.js 3.x GPS anchor
-     * Each entity is placed at the real-world GPS coordinate.
-     * look-at="[gps-camera]" makes it always face the viewer.
-     * Position y lifts it off the ground (meters).
-     */
     const wrapper = document.createElement('a-entity');
     wrapper.setAttribute('gps-entity-place', `latitude:${c.latitude}; longitude:${c.longitude}`);
     wrapper.setAttribute('look-at', '[gps-camera]');
 
-    // ── Sign backing panel ──
+    // Sign panel (centered at Y meters)
     const panel = document.createElement('a-plane');
-    panel.setAttribute('position','0 3 0');
+    panel.setAttribute('position',`0 ${Y} 0`);
     panel.setAttribute('width','3.5');
     panel.setAttribute('height','1.5');
     panel.setAttribute('color','#050505');
     panel.setAttribute('opacity','0.85');
     panel.setAttribute('side','double');
 
-    // ── Top neon bar ──
+    // Top neon bar
     const topBar = document.createElement('a-plane');
-    topBar.setAttribute('position','0 3.73 0.01');
+    topBar.setAttribute('position',`0 ${Y+0.73} 0.01`);
     topBar.setAttribute('width','3.5');
     topBar.setAttribute('height','0.06');
-    topBar.setAttribute('color', color);
-    topBar.setAttribute('emissive', color);
+    topBar.setAttribute('color',color);
+    topBar.setAttribute('emissive',color);
     topBar.setAttribute('emissive-intensity','2');
 
-    // ── Bottom neon bar ──
+    // Bottom neon bar
     const botBar = document.createElement('a-plane');
-    botBar.setAttribute('position','0 2.27 0.01');
+    botBar.setAttribute('position',`0 ${Y-0.73} 0.01`);
     botBar.setAttribute('width','3.5');
     botBar.setAttribute('height','0.06');
-    botBar.setAttribute('color', color);
-    botBar.setAttribute('emissive', color);
+    botBar.setAttribute('color',color);
+    botBar.setAttribute('emissive',color);
     botBar.setAttribute('emissive-intensity','2');
 
-    // ── Business name ──
+    // Business name
     const nameText = document.createElement('a-text');
-    nameText.setAttribute('value', label);
-    nameText.setAttribute('color', color);
+    nameText.setAttribute('value',label);
+    nameText.setAttribute('color',color);
     nameText.setAttribute('align','center');
     nameText.setAttribute('width','4');
-    nameText.setAttribute('position','0 3.12 0.02');
-    nameText.setAttribute('z-offset','0.01');
+    nameText.setAttribute('position',`0 ${Y+0.12} 0.02`);
 
-    // ── Sub-label (type + distance) ──
+    // Sub-label
     const subText = document.createElement('a-text');
-    subText.setAttribute('value', `${typeStr}   \u00b7   ${ft} FT AWAY`);
+    subText.setAttribute('value',`${typeStr}   \u00b7   ${ft} FT AWAY`);
     subText.setAttribute('color','#666666');
     subText.setAttribute('align','center');
     subText.setAttribute('width','2.5');
-    subText.setAttribute('position','0 2.72 0.02');
+    subText.setAttribute('position',`0 ${Y-0.28} 0.02`);
 
-    // ── Vertical pole ──
+    // Vertical pole from ground to sign
     const pole = document.createElement('a-cylinder');
-    pole.setAttribute('position','0 1.5 0');
+    pole.setAttribute('position',`0 ${Y/2} 0`);
     pole.setAttribute('radius','0.025');
-    pole.setAttribute('height','3');
-    pole.setAttribute('color', color);
+    pole.setAttribute('height',`${Y}`);
+    pole.setAttribute('color',color);
     pole.setAttribute('opacity','0.5');
-    pole.setAttribute('emissive', color);
+    pole.setAttribute('emissive',color);
     pole.setAttribute('emissive-intensity','1');
 
-    // ── Ground circle ──
+    // Ground circle
     const ground = document.createElement('a-circle');
     ground.setAttribute('position','0 0.01 0');
     ground.setAttribute('radius','0.5');
-    ground.setAttribute('color', color);
+    ground.setAttribute('color',color);
     ground.setAttribute('opacity','0.25');
     ground.setAttribute('rotation','-90 0 0');
 
-    // ── Pulsing ring ──
+    // Pulsing ring
     const ring = document.createElement('a-ring');
     ring.setAttribute('position','0 0.02 0');
     ring.setAttribute('radius-inner','0.5');
     ring.setAttribute('radius-outer','0.7');
-    ring.setAttribute('color', color);
+    ring.setAttribute('color',color);
     ring.setAttribute('opacity','0.4');
     ring.setAttribute('rotation','-90 0 0');
     ring.setAttribute('animation',
@@ -363,12 +313,10 @@ function renderAREntities(campaigns){
     wrapper.appendChild(pole);
     wrapper.appendChild(ground);
     wrapper.appendChild(ring);
-
     root.appendChild(wrapper);
   });
 }
 
-// ── BOTTOM CARDS ──────────────────────────────────────────────────────────────
 function renderCards(campaigns){
   const strip = document.getElementById('cards-strip');
   const row   = document.getElementById('cards-row');
@@ -388,7 +336,6 @@ function renderCards(campaigns){
 
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// Pause/resume on tab switch
 document.addEventListener('visibilitychange',()=>{
   if(!running) return;
   if(document.hidden){ clearInterval(scanTimer); scanTimer=null; }
