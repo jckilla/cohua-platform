@@ -12,36 +12,40 @@
     html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Segoe UI',sans-serif;}
     #vid{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;}
     #canvas{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;}
-    #hud{position:fixed;top:0;left:0;right:0;z-index:10;display:none;background:rgba(0,0,0,0.75);backdrop-filter:blur(10px);padding:10px 16px;border-bottom:1px solid rgba(0,243,255,0.2);}
+    #hud{position:fixed;top:0;left:0;right:0;z-index:10;display:none;
+      background:rgba(0,0,0,0.8);backdrop-filter:blur(10px);
+      padding:10px 16px;border-bottom:1px solid rgba(0,243,255,0.2);}
     #hi{display:flex;align-items:center;justify-content:space-between;}
     #hl{font-size:18px;font-weight:900;color:#00f3ff;letter-spacing:1px;text-shadow:0 0 10px #00f3ff80;}
     .hs{font-size:10px;display:block;text-align:right;margin-top:2px;}
     .g{color:#00ff66;}.y{color:#ffd700;}.r{color:#ff4466;}.gr{color:#555;}
-    #cards{position:fixed;bottom:0;left:0;right:0;z-index:10;padding:10px 10px 24px;background:linear-gradient(transparent,rgba(0,0,0,0.9));display:none;}
+    #cards{position:fixed;bottom:0;left:0;right:0;z-index:10;
+      padding:10px 10px 24px;background:linear-gradient(transparent,rgba(0,0,0,0.9));display:none;}
     #crow{display:flex;gap:8px;overflow-x:auto;}
     #crow::-webkit-scrollbar{display:none;}
-    .card{flex-shrink:0;min-width:155px;background:rgba(0,0,0,0.85);border-radius:12px;padding:10px 13px;border:1px solid rgba(0,243,255,0.3);}
+    .card{flex-shrink:0;min-width:155px;background:rgba(0,0,0,0.85);border-radius:12px;padding:10px 13px;border:1px solid rgba(255,0,255,0.3);}
     .cn{font-size:12px;font-weight:700;color:#fff;margin-bottom:3px;}
     .cd{font-size:11px;font-weight:600;margin-bottom:2px;}
     .cl{font-size:10px;color:#555;}
-    #start{position:fixed;inset:0;z-index:999;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;}
+    #start{position:fixed;inset:0;z-index:999;background:#000;color:#fff;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding:32px;text-align:center;}
     #start.gone{display:none;}
     .logo{font-size:38px;font-weight:900;color:#00f3ff;text-shadow:0 0 24px #00f3ff80;margin-bottom:6px;}
     .sub{font-size:13px;color:#555;margin-bottom:36px;}
-    .sbtn{background:#00f3ff;color:#000;font-weight:800;font-size:16px;border:none;border-radius:14px;padding:16px 0;width:100%;max-width:280px;cursor:pointer;box-shadow:0 0 24px #00f3ff50;}
+    .sbtn{background:#00f3ff;color:#000;font-weight:800;font-size:16px;border:none;
+      border-radius:14px;padding:16px 0;width:100%;max-width:280px;
+      cursor:pointer;box-shadow:0 0 24px #00f3ff50;}
     .sbtn:disabled{opacity:0.5;}
     .smsg{font-size:12px;color:#444;margin-top:14px;min-height:18px;}
     .steps{margin-top:28px;text-align:left;max-width:280px;}
     .stp{font-size:12px;color:#333;padding:7px 0;border-bottom:1px solid #111;display:flex;gap:10px;}
     .stn{color:#00f3ff;font-weight:700;flex-shrink:0;}
-    /* Calibration overlay */
-    #calib{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,0.85);display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:32px;}
-    #calib.show{display:flex;}
-    .cbig{font-size:60px;animation:spin 2s linear infinite;}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .ctxt{font-size:16px;font-weight:600;margin-top:16px;}
-    .csub{font-size:12px;color:#555;margin-top:8px;}
-    .cskip{margin-top:24px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:#fff;padding:10px 24px;border-radius:20px;cursor:pointer;font-size:13px;}
+    /* Walk prompt */
+    #walkprompt{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+      z-index:11;background:rgba(0,0,0,0.85);border:1px solid rgba(255,215,0,0.4);
+      border-radius:16px;padding:10px 18px;font-size:12px;color:#ffd700;
+      text-align:center;white-space:nowrap;display:none;}
   </style>
 </head>
 <body>
@@ -54,16 +58,8 @@
   <div class="steps">
     <div class="stp"><span class="stn">1</span><span>Allow camera when prompted</span></div>
     <div class="stp"><span class="stn">2</span><span>Allow location when prompted</span></div>
-    <div class="stp"><span class="stn">3</span><span>Slowly rotate phone in a figure-8 to calibrate compass</span></div>
+    <div class="stp"><span class="stn">3</span><span>Walk a few steps so the app learns which direction you're facing</span></div>
   </div>
-</div>
-
-<!-- Calibration screen -->
-<div id="calib">
-  <div class="cbig">&#x1F9ED;</div>
-  <div class="ctxt">Calibrating Compass</div>
-  <div class="csub">Slowly rotate your phone in a figure-8 pattern</div>
-  <button class="cskip" onclick="skipCalib()">Skip &rarr; Show sign anyway</button>
 </div>
 
 <video id="vid" autoplay playsinline muted></video>
@@ -75,11 +71,12 @@
     <div>
       <span class="hs y" id="sg">&#9679; Locating...</span>
       <span class="hs gr" id="sa">Scanning...</span>
-      <span class="hs gr" id="sh">Compass: waiting...</span>
+      <span class="hs gr" id="sh">Direction: walk to calibrate</span>
     </div>
   </div>
 </div>
 
+<div id="walkprompt">&#x1F6B6; Walk a few steps to calibrate direction</div>
 <div id="cards"><div id="crow"></div></div>
 
 <script>
@@ -87,45 +84,41 @@ const SB_URL='https://sgredejirqatcmstlzqi.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNncmVkZWppcnFhdGNtc3RsenFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDY3NTUsImV4cCI6MjA4ODU4Mjc1NX0.bV19P9HmMSDe4JGAmJHcmCIjN3kbZvHTuurmCRVD_sA';
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
 
-const RADIUS_M=914;
+const RADIUS_M=914;   // 3000 ft
 const SCAN_MS=6000;
-const HFOV=60; // horizontal FOV degrees
+const HFOV=60;        // horizontal field of view degrees
+const MIN_MOVE_M=3;   // min GPS movement to trust direction
 
 let uLat=null,uLng=null;
-let rawHeading=null;   // raw from sensor
-let smoothHeading=null; // smoothed/filtered
-let headingSamples=[];
-let compassCalibrated=false;
+let prevLat=null,prevLng=null;
+
+// Heading from two sources, whichever is more reliable
+let gpsHeading=null;       // derived from GPS movement (most reliable)
+let compassHeading=null;   // deviceorientation fallback
+let headingSource='none';  // 'gps' | 'compass' | 'none'
+
 let campaigns=[];
 let raf=null,scanTmr=null,running=false;
 
-// ── math ─────────────────────────────────────────────────────────────────────
+// smooth compass with circular mean
+let cSamples=[];
+function addCompass(h){
+  cSamples.push(h); if(cSamples.length>10) cSamples.shift();
+  let s=0,c=0;
+  cSamples.forEach(v=>{s+=Math.sin(v*Math.PI/180);c+=Math.cos(v*Math.PI/180);});
+  compassHeading=(Math.atan2(s,c)*180/Math.PI+360)%360;
+}
+
+// ── math ──────────────────────────────────────────────────────────────────
 function hav(a1,o1,a2,o2){const R=6371000,r=Math.PI/180,da=(a2-a1)*r,doo=(o2-o1)*r,s=Math.sin(da/2)**2+Math.cos(a1*r)*Math.cos(a2*r)*Math.sin(doo/2)**2;return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));}
 const toFt=m=>Math.round(m*3.28084);
 function brg(a1,o1,a2,o2){const r=Math.PI/180,dO=(o2-o1)*r,y=Math.sin(dO)*Math.cos(a2*r),x=Math.cos(a1*r)*Math.sin(a2*r)-Math.sin(a1*r)*Math.cos(a2*r)*Math.cos(dO);return(Math.atan2(y,x)*180/Math.PI+360)%360;}
-function nc(c){try{return JSON.parse(c.deploy_payload||'{}').neon_color||'#ff00ff';}catch{return'#ff00ff';}}
+function nc(c){try{const p=JSON.parse(c.deploy_payload||'{}');return p.neon_color||'#ff00ff';}catch{return'#ff00ff';}}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
 function trunc(s,n){return s.length>n?s.slice(0,n)+'\u2026':s;}
 
-// Smooth heading using circular mean to avoid 359→1 degree jump
-function addHeadingSample(h){
-  rawHeading=h;
-  headingSamples.push(h);
-  if(headingSamples.length>12) headingSamples.shift();
-  // Circular mean
-  let sin=0,cos=0;
-  headingSamples.forEach(v=>{sin+=Math.sin(v*Math.PI/180);cos+=Math.cos(v*Math.PI/180);});
-  smoothHeading=(Math.atan2(sin,cos)*180/Math.PI+360)%360;
-  // Mark calibrated after enough stable samples
-  if(headingSamples.length>=8 && !compassCalibrated){
-    const range=Math.max(...headingSamples)-Math.min(...headingSamples);
-    // If we've seen variation (user has rotated phone), consider calibrated
-    if(range>30) compassCalibrated=true;
-  }
-}
-
-// ── boot ─────────────────────────────────────────────────────────────────────
+// ── boot ──────────────────────────────────────────────────────────────────
 async function boot(){
   const btn=document.getElementById('sbtn'),msg=document.getElementById('smsg');
   btn.disabled=true;btn.textContent='Starting...';
@@ -142,7 +135,13 @@ async function boot(){
   if(!navigator.geolocation){msg.textContent='GPS not supported.';btn.disabled=false;return;}
   msg.textContent='Getting your location...';
   navigator.geolocation.getCurrentPosition(
-    p=>{uLat=p.coords.latitude;uLng=p.coords.longitude;_go();},
+    p=>{uLat=p.coords.latitude;uLng=p.coords.longitude;
+        // Use speed/heading from GPS if available
+        if(p.coords.heading!=null && !isNaN(p.coords.heading) && p.coords.speed>0.5){
+          gpsHeading=p.coords.heading;
+        }
+        _go();
+    },
     ()=>{msg.textContent='Location denied. Enable location and refresh.';btn.disabled=false;btn.textContent='\uD83D\uDCF7 Open AR Camera';},
     {enableHighAccuracy:true,timeout:15000,maximumAge:0}
   );
@@ -156,70 +155,84 @@ function _go(){
   c.width=window.innerWidth;c.height=window.innerHeight;
   window.addEventListener('resize',()=>{c.width=window.innerWidth;c.height=window.innerHeight;});
 
-  // GPS watch
-  navigator.geolocation.watchPosition(
-    p=>{uLat=p.coords.latitude;uLng=p.coords.longitude;
-      const e=document.getElementById('sg');e.textContent=`\u2022 GPS \u00b1${Math.round(p.coords.accuracy)}m`;e.className='hs g';},
-    ()=>{const e=document.getElementById('sg');e.textContent='\u2022 GPS lost';e.className='hs r';},
-    {enableHighAccuracy:true,timeout:5000,maximumAge:2000}
-  );
+  // GPS watch — primary direction source
+  navigator.geolocation.watchPosition(p=>{
+    const newLat=p.coords.latitude, newLng=p.coords.longitude;
 
-  _startCompass();
+    // GPS built-in heading (most reliable when moving)
+    if(p.coords.heading!=null && !isNaN(p.coords.heading) && p.coords.speed!=null && p.coords.speed>0.3){
+      gpsHeading=p.coords.heading;
+      headingSource='gps';
+    }
+    // Derive heading from position delta (works even without GPS.heading)
+    else if(uLat!=null && uLng!=null){
+      const dist=hav(uLat,uLng,newLat,newLng);
+      if(dist>=MIN_MOVE_M){
+        gpsHeading=brg(uLat,uLng,newLat,newLng);
+        headingSource='gps';
+      }
+    }
+
+    prevLat=uLat; prevLng=uLng;
+    uLat=newLat; uLng=newLng;
+
+    const el=document.getElementById('sg');
+    el.textContent=`\u2022 GPS \u00b1${Math.round(p.coords.accuracy)}m`;
+    el.className='hs g';
+
+    // Update heading status
+    const sh=document.getElementById('sh');
+    if(headingSource==='gps'){
+      sh.textContent=`Dir: ${Math.round(gpsHeading)}\u00b0 (GPS)`;
+      sh.className='hs g';
+      document.getElementById('walkprompt').style.display='none';
+    } else if(headingSource==='compass'){
+      sh.textContent=`Dir: ${Math.round(compassHeading)}\u00b0 (compass)`;
+      sh.className='hs y';
+    } else {
+      sh.textContent='Walk a few steps to set direction';
+      sh.className='hs y';
+      document.getElementById('walkprompt').style.display='block';
+    }
+  },
+  ()=>{const e=document.getElementById('sg');e.textContent='\u2022 GPS lost';e.className='hs r';},
+  {enableHighAccuracy:true,timeout:5000,maximumAge:0});
+
+  // Compass fallback (use only if no GPS heading yet)
+  _compass();
+
+  // Show walk prompt after 3s if no heading yet
+  setTimeout(()=>{ if(headingSource==='none') document.getElementById('walkprompt').style.display='block'; },3000);
+
   scan();
   scanTmr=setInterval(scan,SCAN_MS);
   raf=requestAnimationFrame(loop);
-
-  // Show calibration screen after 1s
-  setTimeout(()=>{ if(!compassCalibrated) document.getElementById('calib').classList.add('show'); },1000);
 }
 
-function skipCalib(){
-  compassCalibrated=true;
-  document.getElementById('calib').classList.remove('show');
-}
-
-function _startCompass(){
-  const handler=e=>{
-    // Hide calibration overlay once we get compass data
-    document.getElementById('calib').classList.remove('show');
-
-    let h;
-    if(e.webkitCompassHeading!=null && e.webkitCompassHeading!==0){
-      // iOS: already corrected, 0=North clockwise
-      h=e.webkitCompassHeading;
-    } else if(e.absolute && e.alpha!=null){
-      // Android absolute: convert to compass bearing
-      h=(360-e.alpha)%360;
-    } else if(e.alpha!=null){
-      // Android non-absolute: same conversion
-      h=(360-e.alpha)%360;
-    } else return;
-
-    addHeadingSample(h);
-    const el=document.getElementById('sh');
-    el.textContent=`Compass: ${Math.round(smoothHeading)}\u00b0`;
-    el.className=compassCalibrated?'hs g':'hs y';
+function _compass(){
+  const h=e=>{
+    if(headingSource==='gps') return; // GPS is better, ignore compass
+    let val;
+    if(e.webkitCompassHeading!=null) val=e.webkitCompassHeading;
+    else if(e.alpha!=null) val=(360-e.alpha)%360;
+    else return;
+    addCompass(val);
+    headingSource='compass';
+    const sh=document.getElementById('sh');
+    sh.textContent=`Dir: ${Math.round(compassHeading)}\u00b0 (compass)`;
+    sh.className='hs y';
   };
-
-  // Try absolute orientation first (more accurate on Android)
   if(typeof DeviceOrientationEvent!=='undefined'){
     if(typeof DeviceOrientationEvent.requestPermission==='function'){
-      // iOS 13+ — needs permission
-      DeviceOrientationEvent.requestPermission().then(s=>{
-        if(s==='granted'){
-          window.addEventListener('deviceorientationabsolute',handler,true);
-          window.addEventListener('deviceorientation',handler,true);
-        }
-      }).catch(()=>{});
+      DeviceOrientationEvent.requestPermission().then(s=>{if(s==='granted'){window.addEventListener('deviceorientationabsolute',h,true);window.addEventListener('deviceorientation',h,true);}}).catch(()=>{});
     } else {
-      // Android — no permission needed
-      window.addEventListener('deviceorientationabsolute',handler,true);
-      window.addEventListener('deviceorientation',handler,true);
+      window.addEventListener('deviceorientationabsolute',h,true);
+      window.addEventListener('deviceorientation',h,true);
     }
   }
 }
 
-// ── scan ─────────────────────────────────────────────────────────────────────
+// ── scan ───────────────────────────────────────────────────────────────────
 async function scan(){
   if(!uLat||!uLng)return;
   document.getElementById('sa').textContent='Scanning...';
@@ -237,17 +250,20 @@ async function scan(){
   renderCards();
 }
 
-// ── render loop ───────────────────────────────────────────────────────────────
-function loop(){drawAR();raf=requestAnimationFrame(loop);}
+// ── render ──────────────────────────────────────────────────────────────────
+function loop(){draw();raf=requestAnimationFrame(loop);}
 
-function drawAR(){
+function draw(){
   const canvas=document.getElementById('canvas');
   const ctx=canvas.getContext('2d');
   const W=canvas.width,H=canvas.height;
   ctx.clearRect(0,0,W,H);
   if(!campaigns.length||!uLat)return;
 
-  const h=smoothHeading; // current compass heading (null if not ready)
+  // Determine heading to use
+  const h = headingSource==='gps' ? gpsHeading
+           : headingSource==='compass' ? compassHeading
+           : null;
 
   campaigns.forEach(c=>{
     const color=nc(c);
@@ -256,121 +272,98 @@ function drawAR(){
     const typeStr={neon_logo:'NEON LOGO',neon_menu:'NEON MENU',neon_image:'NEON IMAGE',custom_3d:'3D AD'}[c.asset_type]||'AR AD';
     const SW=Math.min(W*0.82,300),SH=100,R=14;
     const Y=H*0.28;
-    let x;
 
     if(h===null){
-      // No compass — center sign, show hint
-      x=W/2;
-      _drawSign(ctx,x,Y,SW,SH,R,color,name,typeStr,ft,false);
+      // No heading yet — show centered with walk hint
+      _sign(ctx,W/2,Y,SW,SH,R,color,name,typeStr,ft);
       ctx.save();
-      ctx.fillStyle='rgba(255,255,255,0.3)';
+      ctx.fillStyle='rgba(255,215,0,0.7)';
       ctx.font='12px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText('\u21BA Rotate phone to calibrate compass',W/2,Y+SH/2+22);
+      ctx.fillText('\uD83D\uDEB6 Walk a few steps to lock position',W/2,Y+SH/2+22);
       ctx.restore();
       return;
     }
 
-    // Bearing diff: how far off-center is the sign
-    let diff=(c._b-h+360)%360;
-    if(diff>180) diff-=360; // -180 to +180
-    x=W/2+(diff/HFOV)*W;
+    // Angle between where phone points and where sign is
+    let diff=(c._b - h + 360)%360;
+    if(diff>180) diff-=360; // -180..+180
 
-    // Off-screen edge arrows
+    const x=W/2+(diff/HFOV)*W;
+
+    // Off-screen — edge arrow
     if(x < -SW/2-20 || x > W+SW/2+20){
-      // Draw directional arrow at screen edge
-      const ax=diff<0 ? 30 : W-30;
+      const ax=diff<0?36:W-36;
       ctx.save();
       ctx.shadowColor=color;ctx.shadowBlur=20;
       ctx.fillStyle=color;ctx.globalAlpha=0.9;
-      ctx.font='bold 30px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(diff<0?'\u25C0':'\u25B6',ax,Y);
-      ctx.fillStyle='rgba(255,255,255,0.6)';
+      ctx.font='bold 32px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(diff<0?'\u25C0':'\u25B6',ax,H*0.3);
+      ctx.globalAlpha=0.7;
+      ctx.fillStyle='#fff';
       ctx.font='10px sans-serif';
-      ctx.fillText(`${Math.round(Math.abs(diff))}\u00b0`,ax,Y+22);
+      ctx.fillText(trunc(name,14),ax,H*0.3+26);
+      ctx.fillText(`${ft} ft`,ax,H*0.3+40);
       ctx.restore();
       return;
     }
 
-    _drawSign(ctx,x,Y,SW,SH,R,color,name,typeStr,ft,true);
+    _sign(ctx,x,Y,SW,SH,R,color,name,typeStr,ft);
   });
 
-  // Compass ring at top
-  if(h!==null){
-    _drawCompassBar(ctx,W,h);
-  } else {
-    ctx.save();
-    ctx.fillStyle='rgba(0,0,0,0.5)';
-    rr(ctx,W/2-110,48,220,22,11);ctx.fill();
-    ctx.fillStyle='rgba(255,215,0,0.7)';
-    ctx.font='10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('\u21BB Calibrating compass — rotate phone slowly',W/2,59);
-    ctx.restore();
-  }
+  // Compass bar
+  if(h!==null) _compassBar(ctx,W,h);
 }
 
-function _drawSign(ctx,x,Y,SW,SH,R,color,name,typeStr,ft,hasCompass){
+function _sign(ctx,x,Y,SW,SH,R,color,name,typeStr,ft){
   ctx.save();
-  ctx.shadowColor=color;ctx.shadowBlur=30;
-
+  ctx.shadowColor=color;ctx.shadowBlur=32;
   // Panel
   rr(ctx,x-SW/2,Y-SH/2,SW,SH,R);
   ctx.fillStyle='rgba(0,0,0,0.88)';ctx.fill();
-
-  // Neon border
+  // Border
   rr(ctx,x-SW/2,Y-SH/2,SW,SH,R);
   ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.stroke();
-
-  // Top bar
+  // Top/bottom bars
   ctx.fillStyle=color;ctx.globalAlpha=0.9;
   rr(ctx,x-SW/2+R,Y-SH/2,SW-R*2,5,2);ctx.fill();
   rr(ctx,x-SW/2+R,Y+SH/2-5,SW-R*2,5,2);ctx.fill();
   ctx.globalAlpha=1;
-
   // Name
-  const fs=Math.min(19,Math.floor(SW/(Math.max(name.length,1))*1.6+2));
   ctx.fillStyle=color;
-  ctx.font=`bold ${fs}px 'Segoe UI',sans-serif`;
+  ctx.font=`bold 18px 'Segoe UI',sans-serif`;
   ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(trunc(name,24),x,Y-11);
-
+  ctx.fillText(trunc(name,22),x,Y-11);
   // Sub
   ctx.fillStyle='rgba(255,255,255,0.5)';
   ctx.font=`11px 'Segoe UI',sans-serif`;
   ctx.fillText(`${typeStr}  \u00b7  ${ft} FT`,x,Y+16);
-
-  // Down arrow
+  // Arrow down
   ctx.fillStyle=color;ctx.globalAlpha=0.8;
-  const arrY=Y+SH/2+12;
-  ctx.beginPath();ctx.moveTo(x-12,arrY);ctx.lineTo(x+12,arrY);ctx.lineTo(x,arrY+18);ctx.closePath();ctx.fill();
-
+  const ay=Y+SH/2+12;
+  ctx.beginPath();ctx.moveTo(x-12,ay);ctx.lineTo(x+12,ay);ctx.lineTo(x,ay+18);ctx.closePath();ctx.fill();
   // Dashed line
-  ctx.globalAlpha=0.2;ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.setLineDash([5,5]);
-  ctx.beginPath();ctx.moveTo(x,arrY+18);ctx.lineTo(x,ctx.canvas.height*0.72);ctx.stroke();
+  ctx.globalAlpha=0.15;ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.setLineDash([5,5]);
+  ctx.beginPath();ctx.moveTo(x,ay+18);ctx.lineTo(x,ctx.canvas.height*0.72);ctx.stroke();
   ctx.setLineDash([]);
-
   ctx.restore();
 }
 
-function _drawCompassBar(ctx,W,h){
+function _compassBar(ctx,W,h){
   ctx.save();
-  // Small compass strip
   ctx.fillStyle='rgba(0,0,0,0.55)';
-  rr(ctx,W/2-70,48,140,22,11);ctx.fill();
-  // Cardinal labels
-  const dirs=[{l:'N',d:0},{l:'E',d:90},{l:'S',d:180},{l:'W',d:270}];
-  ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='10px sans-serif';
-  dirs.forEach(({l,d})=>{
+  rr(ctx,W/2-70,50,140,20,10);ctx.fill();
+  [{l:'N',d:0},{l:'E',d:90},{l:'S',d:180},{l:'W',d:270}].forEach(({l,d})=>{
     let diff=(d-h+360)%360;
     if(diff>180) diff-=360;
-    const px=W/2+(diff/HFOV)*70; // scale to bar width
-    if(px>W/2-65 && px<W/2+65){
+    const px=W/2+(diff/HFOV)*70;
+    if(px>W/2-65&&px<W/2+65){
       ctx.fillStyle=l==='N'?'#ff4466':'rgba(255,255,255,0.5)';
-      ctx.fillText(l,px,59);
+      ctx.font='10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(l,px,60);
     }
   });
-  // Center tick
   ctx.fillStyle='rgba(255,255,255,0.8)';
-  ctx.fillRect(W/2-0.5,50,1,8);
+  ctx.fillRect(W/2-0.5,51,1,8);
   ctx.restore();
 }
 
