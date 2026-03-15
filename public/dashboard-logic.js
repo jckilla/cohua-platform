@@ -1,5 +1,6 @@
-// COHUA Dashboard Logic v3 - client_id fixes + AR Demo Launcher
-// Loaded by dashboard.html via <script src>
+// COHUA Dashboard Logic v4 - aligned with actual DB schema
+// clients: name, contact_email, contact_phone, address, plan(standard/enterprise/government), status(active/pending/inactive/churned), notes
+// campaigns: name, client_id, asset_type, status(draft/live/paused/ended), latitude, longitude, location_label, budget, notes, deploy_payload
 
 const SUPABASE_URL = 'https://sgredejirqatcmstlzqi.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNncmVkZWppcnFhdGNtc3RsenFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDY3NTUsImV4cCI6MjA4ODU4Mjc1NX0.bV19P9HmMSDe4JGAmJHcmCIjN3kbZvHTuurmCRVD_sA';
@@ -137,7 +138,7 @@ function renderCampaigns(list) {
   const table = document.getElementById('campaigns-table');
   if (!list || !list.length) { empty.classList.remove('hidden'); table.classList.add('hidden'); return; }
   empty.classList.add('hidden'); table.classList.remove('hidden');
-  document.getElementById('campaigns-tbody').innerHTML = list.map(c => `<tr class="group"><td class="pr-4 font-medium">${escHtml(c.name||'Untitled')}</td><td class="pr-4">${fmtType(c.asset_type||c.type)}</td><td class="pr-4"><span class="text-xs px-2.5 py-1 rounded-full badge-${c.status||'draft'}">${c.status||'draft'}</span></td><td class="pr-4 text-xs text-gray-400">${escHtml(c.location_label||c.location||'\u2014')}</td><td class="pr-4 text-xs text-gray-500">${fmtDate(c.created_at)}</td><td><button onclick="deleteCampaign('${c.id}','${escHtml(c.name||'this campaign')}')" class="opacity-0 group-hover:opacity-100 text-red-400/60 hover:text-red-400 transition-all text-xs px-2 py-1 rounded hover:bg-red-400/10">Delete</button></td></tr>`).join('');
+  document.getElementById('campaigns-tbody').innerHTML = list.map(c => `<tr class="group"><td class="pr-4 font-medium">${escHtml(c.name||'Untitled')}</td><td class="pr-4">${fmtType(c.asset_type||c.type)}</td><td class="pr-4"><span class="text-xs px-2.5 py-1 rounded-full badge-${c.status||'draft'}">${c.status||'draft'}</span></td><td class="pr-4 text-xs text-gray-400">${escHtml(c.location_label||'\u2014')}</td><td class="pr-4 text-xs text-gray-500">${fmtDate(c.created_at)}</td><td><button onclick="deleteCampaign('${c.id}','${escHtml(c.name||'this campaign')}')" class="opacity-0 group-hover:opacity-100 text-red-400/60 hover:text-red-400 transition-all text-xs px-2 py-1 rounded hover:bg-red-400/10">Delete</button></td></tr>`).join('');
 }
 function filterCampaigns(filter) {
   document.querySelectorAll('[id^="filter-"]').forEach(b => b.classList.remove('active'));
@@ -184,6 +185,8 @@ async function deleteCampaign(id, name) {
   });
 }
 
+// CLIENTS
+// Real schema: name*, contact_email*, contact_phone, address, plan(standard/enterprise/government)*, status(active/pending/inactive/churned)*, notes
 async function loadClients() {
   if (!supabaseClient) return;
   try {
@@ -194,28 +197,35 @@ async function loadClients() {
     const table = document.getElementById('clients-table');
     if (!list.length) { empty.classList.remove('hidden'); table.classList.add('hidden'); return; }
     empty.classList.add('hidden'); table.classList.remove('hidden');
-    document.getElementById('clients-tbody').innerHTML = list.map(c => `<tr class="group"><td class="pr-4 font-medium">${escHtml(c.name||'Unnamed')}</td><td class="pr-4 text-sm text-gray-400">${fmtIndustry(c.industry)}</td><td class="pr-4"><span class="text-xs px-2.5 py-1 rounded-full badge-client">${c.plan||'monthly'}</span></td><td class="pr-4 text-xs text-gray-400">${escHtml(c.contact_email||c.email||'\u2014')}</td><td class="pr-4 text-xs text-gray-400">${escHtml(c.city||'\u2014')}</td><td class="pr-4 text-xs text-gray-500">${fmtDate(c.created_at)}</td><td><button onclick="deleteClient('${c.id}','${escHtml(c.name||'client')}')" class="opacity-0 group-hover:opacity-100 text-red-400/60 hover:text-red-400 transition-all text-xs px-2 py-1 rounded hover:bg-red-400/10">Remove</button></td></tr>`).join('');
+    document.getElementById('clients-tbody').innerHTML = list.map(c => `<tr class="group"><td class="pr-4 font-medium">${escHtml(c.name||'Unnamed')}</td><td class="pr-4"><span class="text-xs px-2.5 py-1 rounded-full badge-client">${c.plan||'\u2014'}</span></td><td class="pr-4 text-xs text-gray-400">${escHtml(c.contact_email||'\u2014')}</td><td class="pr-4 text-xs text-gray-400">${escHtml(c.contact_phone||'\u2014')}</td><td class="pr-4 text-xs text-gray-400">${escHtml(c.address||'\u2014')}</td><td class="pr-4 text-xs text-gray-500">${fmtDate(c.created_at)}</td><td><button onclick="deleteClient('${c.id}','${escHtml(c.name||'client')}')" class="opacity-0 group-hover:opacity-100 text-red-400/60 hover:text-red-400 transition-all text-xs px-2 py-1 rounded hover:bg-red-400/10">Remove</button></td></tr>`).join('');
   } catch(e) { toast('Failed to load clients', 'error'); console.error(e); }
 }
 async function createClient() {
   const name = document.getElementById('client-name').value.trim();
-  const industry = document.getElementById('client-industry').value;
   const plan = document.getElementById('client-plan').value;
   const email = document.getElementById('client-email').value.trim();
-  const contact = document.getElementById('client-contact').value.trim();
   const phone = document.getElementById('client-phone').value.trim();
-  const city = document.getElementById('client-city').value.trim();
+  const address = document.getElementById('client-address').value.trim();
+  const notes = document.getElementById('client-notes').value.trim();
   if (!name) { toast('Business name is required', 'error'); return; }
   if (!email) { toast('Contact email is required', 'error'); return; }
   if (!supabaseClient) { toast('Database not connected', 'error'); return; }
   const btn = document.getElementById('btn-create-client');
   btn.textContent = 'Adding\u2026'; btn.disabled = true;
   try {
-    const { error } = await supabaseClient.from('clients').insert({ name, industry:industry||null, plan, contact_email:email, contact_name:contact||null, phone:phone||null, city:city||null });
+    const { error } = await supabaseClient.from('clients').insert({
+      name,
+      contact_email: email,
+      contact_phone: phone || null,
+      address: address || null,
+      plan,
+      status: 'active',
+      notes: notes || null
+    });
     if (error) throw error;
     closeModal('modal-client');
-    ['client-name','client-email','client-contact','client-phone','client-city'].forEach(id => document.getElementById(id).value='');
-    document.getElementById('client-industry').value='';
+    ['client-name','client-email','client-phone','client-address','client-notes'].forEach(id => document.getElementById(id).value='');
+    document.getElementById('client-plan').value='standard';
     toast(`Client "${name}" added!`, 'success');
     loadStats(); loadClients();
   } catch(e) { toast(e.message||'Failed to add client', 'error'); }
@@ -269,9 +279,7 @@ async function createLocation() {
   finally { btn.textContent='Save Location'; btn.disabled=false; }
 }
 
-// ============================================================
 // AR DEMO LAUNCHER
-// ============================================================
 const DEMO_DURATIONS = [
   { label: '1 Day',    days: 1 },
   { label: '3 Days',   days: 3 },
@@ -282,45 +290,23 @@ const DEMO_DURATIONS = [
   { label: '2 Months', days: 60 },
   { label: '3 Months', days: 90 },
 ];
-let selectedDemoDuration = 1; // days
+let selectedDemoDuration = 1;
 let demoNeonColor = '#00f3ff';
 const NEON_PRESETS = ['#00f3ff','#ff00ff','#00ff66','#ffd700','#ff4466','#ff6600','#ffffff','#7b2fff'];
 
 function initDemoSection() {
-  // Duration buttons
   const grid = document.getElementById('demo-duration-grid');
   if (!grid || grid.dataset.init) return;
   grid.dataset.init = '1';
-  grid.innerHTML = DEMO_DURATIONS.map((d,i) => `
-    <button onclick="selectDemoDuration(${d.days}, this)"
-      class="demo-dur-btn text-center py-3 px-2 rounded-xl border transition-all text-sm font-medium
-             ${i===0 ? 'border-neon-blue/60 bg-neon-blue/10 text-neon-blue' : 'border-white/10 bg-white/4 text-gray-400 hover:border-white/20 hover:text-white'}">
-      ${d.label}
-    </button>`).join('');
-
-  // Neon color swatches
+  grid.innerHTML = DEMO_DURATIONS.map((d,i) => `<button onclick="selectDemoDuration(${d.days}, this)" class="demo-dur-btn text-center py-3 px-2 rounded-xl border transition-all text-sm font-medium ${i===0?'border-neon-blue/60 bg-neon-blue/10 text-neon-blue':'border-white/10 bg-white/4 text-gray-400 hover:border-white/20 hover:text-white'}">${d.label}</button>`).join('');
   const swatches = document.getElementById('demo-color-swatches');
-  if (swatches) {
-    swatches.innerHTML = NEON_PRESETS.map(c => `
-      <button onclick="selectDemoColor('${c}', this)"
-        style="background:${c}; box-shadow: 0 0 8px ${c}60"
-        class="demo-swatch w-8 h-8 rounded-full border-2 transition-all
-               ${c===demoNeonColor ? 'border-white scale-110' : 'border-transparent hover:scale-105'}">
-      </button>`).join('');
-  }
+  if (swatches) swatches.innerHTML = NEON_PRESETS.map(c => `<button onclick="selectDemoColor('${c}', this)" style="background:${c}; box-shadow: 0 0 8px ${c}60" class="demo-swatch w-8 h-8 rounded-full border-2 transition-all ${c===demoNeonColor?'border-white scale-110':'border-transparent hover:scale-105'}"></button>`).join('');
 }
-
 function selectDemoDuration(days, btn) {
   selectedDemoDuration = days;
-  document.querySelectorAll('.demo-dur-btn').forEach(b => {
-    b.className = b.className.replace(/border-neon-blue\/60|bg-neon-blue\/10|text-neon-blue/g, '');
-    b.classList.add('border-white/10','bg-white/4','text-gray-400');
-    b.classList.remove('border-neon-blue/60','bg-neon-blue/10','text-neon-blue');
-  });
-  btn.classList.remove('border-white/10','bg-white/4','text-gray-400');
-  btn.classList.add('border-neon-blue/60','bg-neon-blue/10','text-neon-blue');
+  document.querySelectorAll('.demo-dur-btn').forEach(b => { b.classList.remove('border-neon-blue/60','bg-neon-blue/10','text-neon-blue'); b.classList.add('border-white/10','bg-white/4','text-gray-400'); });
+  btn.classList.remove('border-white/10','bg-white/4','text-gray-400'); btn.classList.add('border-neon-blue/60','bg-neon-blue/10','text-neon-blue');
 }
-
 function selectDemoColor(color, btn) {
   demoNeonColor = color;
   document.querySelectorAll('.demo-swatch').forEach(b => b.classList.remove('border-white','scale-110'));
@@ -330,14 +316,12 @@ function selectDemoColor(color, btn) {
   const custom = document.getElementById('demo-color-custom');
   if (custom) custom.value = color;
 }
-
 function syncCustomColor(val) {
   demoNeonColor = val;
   document.querySelectorAll('.demo-swatch').forEach(b => b.classList.remove('border-white','scale-110'));
   const preview = document.getElementById('demo-color-preview');
   if (preview) { preview.style.background = val; preview.style.boxShadow = `0 0 16px ${val}80`; }
 }
-
 async function launchDemo() {
   const name = document.getElementById('demo-name').value.trim();
   const adType = document.getElementById('demo-ad-type').value;
@@ -346,138 +330,76 @@ async function launchDemo() {
   const locationLabel = document.getElementById('demo-location-label').value.trim();
   const logoUrl = document.getElementById('demo-logo-url').value.trim();
   const notes = document.getElementById('demo-notes').value.trim();
-
   if (!name) { toast('Ad name is required', 'error'); return; }
   if (!lat || !lng) { toast('GPS coordinates are required', 'error'); return; }
   if (!supabaseClient) { toast('Database not connected', 'error'); return; }
-
   const now = new Date();
   const expiresAt = new Date(now.getTime() + selectedDemoDuration * 24 * 60 * 60 * 1000);
   const demoLabel = DEMO_DURATIONS.find(d => d.days === selectedDemoDuration)?.label || `${selectedDemoDuration}d`;
-
   const btn = document.getElementById('btn-launch-demo');
   btn.textContent = 'Launching\u2026'; btn.disabled = true;
-
   try {
-    const payload = {
+    const { data: demoClient } = await supabaseClient.from('clients').select('id').limit(1).maybeSingle();
+    if (!demoClient) { toast('Add at least one client first, then demos will work.', 'warning', 6000); btn.textContent='Launch Demo'; btn.disabled=false; return; }
+    const { error } = await supabaseClient.from('campaigns').insert({
       name: `[DEMO] ${name}`,
+      client_id: demoClient.id,
       asset_type: adType || 'neon_logo',
       status: 'live',
       latitude: parseFloat(lat),
       longitude: parseFloat(lng),
       location_label: locationLabel || null,
-      notes: [
-        `DEMO MODE \u2014 expires ${expiresAt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`,
-        `Duration: ${demoLabel}`,
-        `Neon color: ${demoNeonColor}`,
-        logoUrl ? `Logo URL: ${logoUrl}` : null,
-        notes || null
-      ].filter(Boolean).join(' | '),
-      deploy_payload: JSON.stringify({
-        demo: true,
-        neon_color: demoNeonColor,
-        logo_url: logoUrl || null,
-        expires_at: expiresAt.toISOString(),
-        duration_days: selectedDemoDuration
-      })
-    };
-
-    // Try with a demo client_id placeholder or without if nullable
-    const { data: demoClient } = await supabaseClient
-      .from('clients').select('id').limit(1).maybeSingle();
-
-    if (demoClient) payload.client_id = demoClient.id;
-    // If no clients exist at all, the insert may fail on client_id constraint.
-    // In that case we still try and surface the error.
-
-    const { error } = await supabaseClient.from('campaigns').insert(payload);
+      notes: [`DEMO \u2014 expires ${expiresAt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`, `Duration: ${demoLabel}`, `Neon: ${demoNeonColor}`, logoUrl?`Logo: ${logoUrl}`:null, notes||null].filter(Boolean).join(' | '),
+      deploy_payload: JSON.stringify({ demo:true, neon_color:demoNeonColor, logo_url:logoUrl||null, expires_at:expiresAt.toISOString(), duration_days:selectedDemoDuration })
+    });
     if (error) throw error;
-
     toast(`\u26a1 "${name}" demo launched for ${demoLabel}!`, 'success', 5000);
-    document.getElementById('demo-name').value = '';
-    document.getElementById('demo-lat').value = '';
-    document.getElementById('demo-lng').value = '';
-    document.getElementById('demo-location-label').value = '';
-    document.getElementById('demo-logo-url').value = '';
-    document.getElementById('demo-notes').value = '';
-    loadDemos();
-    loadStats();
-  } catch(e) {
-    if (e.message && e.message.includes('client_id')) {
-      toast('You need at least one client in the system to launch demos. Add a dummy client first.', 'warning', 6000);
-    } else {
-      toast(e.message || 'Failed to launch demo', 'error');
-    }
-  }
-  finally { btn.textContent = 'Launch Demo'; btn.disabled = false; }
+    ['demo-name','demo-lat','demo-lng','demo-location-label','demo-logo-url','demo-notes'].forEach(id => document.getElementById(id).value='');
+    loadDemos(); loadStats();
+  } catch(e) { toast(e.message||'Failed to launch demo', 'error'); }
+  finally { btn.textContent='Launch Demo'; btn.disabled=false; }
 }
-
 async function loadDemos() {
   if (!supabaseClient) return;
   try {
-    const { data } = await supabaseClient
-      .from('campaigns')
-      .select('id,name,status,location_label,latitude,longitude,created_at,notes,deploy_payload')
-      .like('name', '[DEMO]%')
-      .order('created_at', { ascending: false })
-      .limit(20);
+    const { data } = await supabaseClient.from('campaigns').select('id,name,status,location_label,latitude,longitude,created_at,notes,deploy_payload').like('name','[DEMO]%').order('created_at',{ascending:false}).limit(20);
     const list = data || [];
     const empty = document.getElementById('demos-empty');
     const grid = document.getElementById('demos-grid');
     if (!list.length) { empty.classList.remove('hidden'); grid.classList.add('hidden'); return; }
     empty.classList.add('hidden'); grid.classList.remove('hidden');
-
     grid.innerHTML = list.map(d => {
-      let payload = {};
-      try { payload = JSON.parse(d.deploy_payload || '{}'); } catch {}
-      const color = payload.neon_color || '#00f3ff';
+      let payload = {}; try { payload = JSON.parse(d.deploy_payload||'{}'); } catch {}
+      const color = payload.neon_color||'#00f3ff';
       const expires = payload.expires_at ? new Date(payload.expires_at) : null;
-      const now = new Date();
-      const expired = expires && expires < now;
-      const daysLeft = expires ? Math.ceil((expires - now) / (1000*60*60*24)) : null;
-      return `
-      <div class="glass rounded-xl p-4 border hover:opacity-90 transition-all" style="border-color: ${color}40">
+      const expired = expires && expires < new Date();
+      const daysLeft = expires ? Math.ceil((expires-new Date())/(1000*60*60*24)) : null;
+      return `<div class="glass rounded-xl p-4 border hover:opacity-90 transition-all" style="border-color:${color}40">
         <div class="flex items-start justify-between mb-3">
-          <div>
-            <p class="font-semibold text-sm">${escHtml(d.name.replace('[DEMO] ',''))}</p>
-            <p class="text-xs text-gray-500 mt-0.5">${escHtml(d.location_label || `${d.latitude}, ${d.longitude}`)}</p>
-          </div>
-          <div class="flex flex-col items-end gap-1">
-            <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:${color}20; color:${color}; border: 1px solid ${color}40">
-              ${expired ? 'Expired' : daysLeft !== null ? `${daysLeft}d left` : 'Live'}
-            </span>
-            <button onclick="endDemo('${d.id}')" class="text-xs text-red-400/60 hover:text-red-400 transition-colors">End</button>
-          </div>
+          <div><p class="font-semibold text-sm">${escHtml(d.name.replace('[DEMO] ',''))}</p><p class="text-xs text-gray-500 mt-0.5">${escHtml(d.location_label||`${d.latitude}, ${d.longitude}`)}</p></div>
+          <div class="flex flex-col items-end gap-1"><span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:${color}20;color:${color};border:1px solid ${color}40">${expired?'Expired':daysLeft!==null?`${daysLeft}d left`:'Live'}</span><button onclick="endDemo('${d.id}')" class="text-xs text-red-400/60 hover:text-red-400 transition-colors">End</button></div>
         </div>
-        <div class="flex items-center gap-2">
-          <div class="w-4 h-4 rounded-full flex-shrink-0" style="background:${color}; box-shadow: 0 0 6px ${color}"></div>
-          <p class="text-xs text-gray-500">${escHtml(d.notes ? d.notes.split(' | ')[0] : 'Demo AR experience')}</p>
-        </div>
+        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded-full flex-shrink-0" style="background:${color};box-shadow:0 0 6px ${color}"></div><p class="text-xs text-gray-500">${escHtml(d.notes?d.notes.split(' | ')[0]:'Demo AR experience')}</p></div>
       </div>`;
     }).join('');
-  } catch(e) { console.error('loadDemos error', e); }
+  } catch(e) { console.error('loadDemos error',e); }
 }
-
 async function endDemo(id) {
   confirmAction('End this demo?', 'The AR experience will be set to ended.', async () => {
     try {
-      const { error } = await supabaseClient.from('campaigns').update({ status: 'ended' }).eq('id', id);
+      const { error } = await supabaseClient.from('campaigns').update({status:'ended'}).eq('id',id);
       if (error) throw error;
-      toast('Demo ended', 'info');
-      loadDemos(); loadStats();
-    } catch(e) { toast('Failed to end demo', 'error'); }
+      toast('Demo ended','info'); loadDemos(); loadStats();
+    } catch(e) { toast('Failed to end demo','error'); }
   });
 }
 
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDate(d) { if (!d) return '\u2014'; try { return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); } catch { return '\u2014'; } }
 function fmtType(t) { return {neon_logo:'Neon Logo',neon_menu:'Neon Menu',neon_image:'Neon Image',custom_3d:'Custom 3D',location:'Location'}[t]||t||'\u2014'; }
-function fmtIndustry(i) { return {retail:'Retail',restaurant:'Restaurant',real_estate:'Real Estate',construction:'Construction',hospitality:'Hospitality',tech:'Technology',finance:'Finance',other:'Other'}[i]||i||'\u2014'; }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); }));
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id)); confirmReject(); }
-  });
+  document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target===m) closeModal(m.id); }));
+  document.addEventListener('keydown', e => { if (e.key==='Escape') { document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id)); confirmReject(); } });
   checkAuth();
 });
