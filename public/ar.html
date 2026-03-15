@@ -23,7 +23,8 @@
       padding:10px 10px 24px;background:linear-gradient(transparent,rgba(0,0,0,0.9));display:none;}
     #crow{display:flex;gap:8px;overflow-x:auto;}
     #crow::-webkit-scrollbar{display:none;}
-    .card{flex-shrink:0;min-width:155px;background:rgba(0,0,0,0.85);border-radius:12px;padding:10px 13px;border:1px solid rgba(255,0,255,0.3);}
+    .card{flex-shrink:0;min-width:155px;background:rgba(0,0,0,0.85);border-radius:12px;
+      padding:10px 13px;border:1px solid rgba(255,0,255,0.3);}
     .cn{font-size:12px;font-weight:700;color:#fff;margin-bottom:3px;}
     .cd{font-size:11px;font-weight:600;margin-bottom:2px;}
     .cl{font-size:10px;color:#555;}
@@ -41,11 +42,10 @@
     .steps{margin-top:28px;text-align:left;max-width:280px;}
     .stp{font-size:12px;color:#333;padding:7px 0;border-bottom:1px solid #111;display:flex;gap:10px;}
     .stn{color:#00f3ff;font-weight:700;flex-shrink:0;}
-    /* Walk prompt */
     #walkprompt{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
       z-index:11;background:rgba(0,0,0,0.85);border:1px solid rgba(255,215,0,0.4);
       border-radius:16px;padding:10px 18px;font-size:12px;color:#ffd700;
-      text-align:center;white-space:nowrap;display:none;}
+      text-align:center;white-space:nowrap;display:none;pointer-events:none;}
   </style>
 </head>
 <body>
@@ -58,7 +58,7 @@
   <div class="steps">
     <div class="stp"><span class="stn">1</span><span>Allow camera when prompted</span></div>
     <div class="stp"><span class="stn">2</span><span>Allow location when prompted</span></div>
-    <div class="stp"><span class="stn">3</span><span>Walk a few steps so the app learns which direction you're facing</span></div>
+    <div class="stp"><span class="stn">3</span><span>Walk a few steps — the sign will lock onto the building</span></div>
   </div>
 </div>
 
@@ -71,12 +71,12 @@
     <div>
       <span class="hs y" id="sg">&#9679; Locating...</span>
       <span class="hs gr" id="sa">Scanning...</span>
-      <span class="hs gr" id="sh">Direction: walk to calibrate</span>
+      <span class="hs gr" id="sh">Walk to calibrate direction</span>
     </div>
   </div>
 </div>
 
-<div id="walkprompt">&#x1F6B6; Walk a few steps to calibrate direction</div>
+<div id="walkprompt">&#x1F6B6; Walk a few steps to lock sign position</div>
 <div id="cards"><div id="crow"></div></div>
 
 <script>
@@ -84,32 +84,28 @@ const SB_URL='https://sgredejirqatcmstlzqi.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNncmVkZWppcnFhdGNtc3RsenFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDY3NTUsImV4cCI6MjA4ODU4Mjc1NX0.bV19P9HmMSDe4JGAmJHcmCIjN3kbZvHTuurmCRVD_sA';
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
 
-const RADIUS_M=914;   // 3000 ft
-const SCAN_MS=6000;
-const HFOV=60;        // horizontal field of view degrees
-const MIN_MOVE_M=3;   // min GPS movement to trust direction
+const RADIUS_M = 914;   // 3000 ft
+const SCAN_MS  = 8000;
+const HFOV     = 60;    // horizontal FOV degrees
+const MIN_MOVE = 4;     // meters of movement before updating heading
+const SMOOTH_K = 0.08;  // low-pass filter strength (lower = smoother, slower)
 
-let uLat=null,uLng=null;
-let prevLat=null,prevLng=null;
+let uLat=null, uLng=null;
+let prevLat=null, prevLng=null;
 
-// Heading from two sources, whichever is more reliable
-let gpsHeading=null;       // derived from GPS movement (most reliable)
-let compassHeading=null;   // deviceorientation fallback
-let headingSource='none';  // 'gps' | 'compass' | 'none'
+// Single smoothed heading — updated from GPS movement or compass
+// Once set, NEVER goes back to null so sign never disappears
+let smoothedHeading = null;  // degrees 0-360
+let headingLocked   = false; // true once we have enough data
+let headingSource   = 'none';
 
 let campaigns=[];
-let raf=null,scanTmr=null,running=false;
+let raf=null, scanTmr=null, running=false;
 
-// smooth compass with circular mean
-let cSamples=[];
-function addCompass(h){
-  cSamples.push(h); if(cSamples.length>10) cSamples.shift();
-  let s=0,c=0;
-  cSamples.forEach(v=>{s+=Math.sin(v*Math.PI/180);c+=Math.cos(v*Math.PI/180);});
-  compassHeading=(Math.atan2(s,c)*180/Math.PI+360)%360;
-}
+// Compass smoothing buffer
+let cBuf=[];
 
-// ── math ──────────────────────────────────────────────────────────────────
+// ── math ──────────────────────────────────────────────────────────────────────
 function hav(a1,o1,a2,o2){const R=6371000,r=Math.PI/180,da=(a2-a1)*r,doo=(o2-o1)*r,s=Math.sin(da/2)**2+Math.cos(a1*r)*Math.cos(a2*r)*Math.sin(doo/2)**2;return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));}
 const toFt=m=>Math.round(m*3.28084);
 function brg(a1,o1,a2,o2){const r=Math.PI/180,dO=(o2-o1)*r,y=Math.sin(dO)*Math.cos(a2*r),x=Math.cos(a1*r)*Math.sin(a2*r)-Math.sin(a1*r)*Math.cos(a2*r)*Math.cos(dO);return(Math.atan2(y,x)*180/Math.PI+360)%360;}
@@ -118,7 +114,20 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','
 function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
 function trunc(s,n){return s.length>n?s.slice(0,n)+'\u2026':s;}
 
-// ── boot ──────────────────────────────────────────────────────────────────
+// Circular low-pass filter — smooths heading without the 359→1 degree jump problem
+function applyHeading(newH){
+  if(smoothedHeading===null){
+    smoothedHeading=newH;
+    return;
+  }
+  // Circular difference
+  let diff = newH - smoothedHeading;
+  if(diff > 180)  diff -= 360;
+  if(diff < -180) diff += 360;
+  smoothedHeading = (smoothedHeading + diff * SMOOTH_K + 360) % 360;
+}
+
+// ── boot ───────────────────────────────────────────────────────────────────────
 async function boot(){
   const btn=document.getElementById('sbtn'),msg=document.getElementById('smsg');
   btn.disabled=true;btn.textContent='Starting...';
@@ -136,13 +145,14 @@ async function boot(){
   msg.textContent='Getting your location...';
   navigator.geolocation.getCurrentPosition(
     p=>{uLat=p.coords.latitude;uLng=p.coords.longitude;
-        // Use speed/heading from GPS if available
-        if(p.coords.heading!=null && !isNaN(p.coords.heading) && p.coords.speed>0.5){
-          gpsHeading=p.coords.heading;
+        if(p.coords.heading!=null&&!isNaN(p.coords.heading)&&p.coords.speed>0.5){
+          applyHeading(p.coords.heading);
+          headingSource='gps'; headingLocked=true;
         }
         _go();
     },
-    ()=>{msg.textContent='Location denied. Enable location and refresh.';btn.disabled=false;btn.textContent='\uD83D\uDCF7 Open AR Camera';},
+    ()=>{msg.textContent='Location denied. Enable location and refresh.';
+         btn.disabled=false;btn.textContent='\uD83D\uDCF7 Open AR Camera';},
     {enableHighAccuracy:true,timeout:15000,maximumAge:0}
   );
 }
@@ -155,92 +165,113 @@ function _go(){
   c.width=window.innerWidth;c.height=window.innerHeight;
   window.addEventListener('resize',()=>{c.width=window.innerWidth;c.height=window.innerHeight;});
 
-  // GPS watch — primary direction source
+  // GPS watch
   navigator.geolocation.watchPosition(p=>{
-    const newLat=p.coords.latitude, newLng=p.coords.longitude;
+    const nLat=p.coords.latitude, nLng=p.coords.longitude;
 
-    // GPS built-in heading (most reliable when moving)
-    if(p.coords.heading!=null && !isNaN(p.coords.heading) && p.coords.speed!=null && p.coords.speed>0.3){
-      gpsHeading=p.coords.heading;
-      headingSource='gps';
+    // 1. Use GPS built-in heading if moving (most accurate)
+    if(p.coords.heading!=null && !isNaN(p.coords.heading) && p.coords.speed!=null && p.coords.speed>0.4){
+      applyHeading(p.coords.heading);
+      headingSource='gps'; headingLocked=true;
     }
-    // Derive heading from position delta (works even without GPS.heading)
+    // 2. Derive from position change if moved enough
     else if(uLat!=null && uLng!=null){
-      const dist=hav(uLat,uLng,newLat,newLng);
-      if(dist>=MIN_MOVE_M){
-        gpsHeading=brg(uLat,uLng,newLat,newLng);
-        headingSource='gps';
+      const dist=hav(uLat,uLng,nLat,nLng);
+      if(dist>=MIN_MOVE){
+        const derived=brg(uLat,uLng,nLat,nLng);
+        applyHeading(derived);
+        headingSource='gps'; headingLocked=true;
       }
+      // else: don't update — keep last known heading so sign stays put
     }
 
-    prevLat=uLat; prevLng=uLng;
-    uLat=newLat; uLng=newLng;
+    uLat=nLat; uLng=nLng;
 
-    const el=document.getElementById('sg');
-    el.textContent=`\u2022 GPS \u00b1${Math.round(p.coords.accuracy)}m`;
-    el.className='hs g';
+    // Update GPS display
+    const sg=document.getElementById('sg');
+    sg.textContent=`\u2022 GPS \u00b1${Math.round(p.coords.accuracy)}m`;
+    sg.className='hs g';
 
-    // Update heading status
-    const sh=document.getElementById('sh');
-    if(headingSource==='gps'){
-      sh.textContent=`Dir: ${Math.round(gpsHeading)}\u00b0 (GPS)`;
-      sh.className='hs g';
-      document.getElementById('walkprompt').style.display='none';
-    } else if(headingSource==='compass'){
-      sh.textContent=`Dir: ${Math.round(compassHeading)}\u00b0 (compass)`;
-      sh.className='hs y';
-    } else {
-      sh.textContent='Walk a few steps to set direction';
-      sh.className='hs y';
-      document.getElementById('walkprompt').style.display='block';
-    }
+    // Update heading display
+    _updateHeadingHUD();
+    // Update campaign distances (user moved)
+    _updateCampaignDistances();
   },
-  ()=>{const e=document.getElementById('sg');e.textContent='\u2022 GPS lost';e.className='hs r';},
+  ()=>{document.getElementById('sg').textContent='\u2022 GPS lost';document.getElementById('sg').className='hs r';},
   {enableHighAccuracy:true,timeout:5000,maximumAge:0});
 
-  // Compass fallback (use only if no GPS heading yet)
   _compass();
-
-  // Show walk prompt after 3s if no heading yet
-  setTimeout(()=>{ if(headingSource==='none') document.getElementById('walkprompt').style.display='block'; },3000);
-
+  setTimeout(()=>{
+    if(!headingLocked) document.getElementById('walkprompt').style.display='block';
+  },2000);
   scan();
   scanTmr=setInterval(scan,SCAN_MS);
   raf=requestAnimationFrame(loop);
 }
 
+function _updateHeadingHUD(){
+  const sh=document.getElementById('sh');
+  if(headingLocked){
+    sh.textContent=`Dir: ${Math.round(smoothedHeading)}\u00b0 (${headingSource})`;
+    sh.className='hs g';
+    document.getElementById('walkprompt').style.display='none';
+  } else if(smoothedHeading!==null){
+    sh.textContent=`Dir: ${Math.round(smoothedHeading)}\u00b0 (approx)`;
+    sh.className='hs y';
+  } else {
+    sh.textContent='Walk a few steps to lock direction';
+    sh.className='hs y';
+  }
+}
+
+function _updateCampaignDistances(){
+  if(!uLat||!uLng) return;
+  campaigns.forEach(c=>{
+    c._m=hav(uLat,uLng,c.latitude,c.longitude);
+    c._b=brg(uLat,uLng,c.latitude,c.longitude);
+  });
+}
+
 function _compass(){
-  const h=e=>{
-    if(headingSource==='gps') return; // GPS is better, ignore compass
+  const handler=e=>{
+    // GPS heading takes priority — only use compass if no GPS heading
+    if(headingSource==='gps') return;
     let val;
-    if(e.webkitCompassHeading!=null) val=e.webkitCompassHeading;
+    if(e.webkitCompassHeading!=null && e.webkitCompassHeading!==0) val=e.webkitCompassHeading;
     else if(e.alpha!=null) val=(360-e.alpha)%360;
     else return;
-    addCompass(val);
+    // Buffer compass samples for stability
+    cBuf.push(val); if(cBuf.length>15) cBuf.shift();
+    // Circular mean
+    let s=0,c=0; cBuf.forEach(v=>{s+=Math.sin(v*Math.PI/180);c+=Math.cos(v*Math.PI/180);});
+    const mean=(Math.atan2(s,c)*180/Math.PI+360)%360;
+    applyHeading(mean);
     headingSource='compass';
-    const sh=document.getElementById('sh');
-    sh.textContent=`Dir: ${Math.round(compassHeading)}\u00b0 (compass)`;
-    sh.className='hs y';
+    if(cBuf.length>=5) headingLocked=true;
+    _updateHeadingHUD();
   };
   if(typeof DeviceOrientationEvent!=='undefined'){
     if(typeof DeviceOrientationEvent.requestPermission==='function'){
-      DeviceOrientationEvent.requestPermission().then(s=>{if(s==='granted'){window.addEventListener('deviceorientationabsolute',h,true);window.addEventListener('deviceorientation',h,true);}}).catch(()=>{});
+      DeviceOrientationEvent.requestPermission()
+        .then(s=>{if(s==='granted'){window.addEventListener('deviceorientationabsolute',handler,true);window.addEventListener('deviceorientation',handler,true);}})
+        .catch(()=>{});
     } else {
-      window.addEventListener('deviceorientationabsolute',h,true);
-      window.addEventListener('deviceorientation',h,true);
+      window.addEventListener('deviceorientationabsolute',handler,true);
+      window.addEventListener('deviceorientation',handler,true);
     }
   }
 }
 
-// ── scan ───────────────────────────────────────────────────────────────────
+// ── scan ──────────────────────────────────────────────────────────────────────
 async function scan(){
-  if(!uLat||!uLng)return;
+  if(!uLat||!uLng) return;
   document.getElementById('sa').textContent='Scanning...';
   const {data,error}=await sb.from('campaigns')
     .select('id,name,asset_type,latitude,longitude,location_label,deploy_payload')
     .eq('status','live').not('latitude','is',null);
-  if(error)return;
-  campaigns=(data||[]).map(c=>({...c,
+  if(error) return;
+  campaigns=(data||[]).map(c=>({
+    ...c,
     _m:hav(uLat,uLng,c.latitude,c.longitude),
     _b:brg(uLat,uLng,c.latitude,c.longitude)
   })).filter(c=>c._m<=RADIUS_M).sort((a,b)=>a._m-b._m);
@@ -250,47 +281,45 @@ async function scan(){
   renderCards();
 }
 
-// ── render ──────────────────────────────────────────────────────────────────
+// ── draw ──────────────────────────────────────────────────────────────────────
 function loop(){draw();raf=requestAnimationFrame(loop);}
 
 function draw(){
   const canvas=document.getElementById('canvas');
   const ctx=canvas.getContext('2d');
-  const W=canvas.width,H=canvas.height;
+  const W=canvas.width, H=canvas.height;
   ctx.clearRect(0,0,W,H);
-  if(!campaigns.length||!uLat)return;
+  if(!campaigns.length||!uLat) return;
 
-  // Determine heading to use
-  const h = headingSource==='gps' ? gpsHeading
-           : headingSource==='compass' ? compassHeading
-           : null;
+  // Use smoothed heading — if null, show sign centered with walk hint
+  const h=smoothedHeading;
 
   campaigns.forEach(c=>{
     const color=nc(c);
     const name=c.name.replace(/\[DEMO\]\s*/,'').trim();
     const ft=toFt(c._m);
     const typeStr={neon_logo:'NEON LOGO',neon_menu:'NEON MENU',neon_image:'NEON IMAGE',custom_3d:'3D AD'}[c.asset_type]||'AR AD';
-    const SW=Math.min(W*0.82,300),SH=100,R=14;
+    const SW=Math.min(W*0.82,300), SH=100, R=14;
     const Y=H*0.28;
 
     if(h===null){
-      // No heading yet — show centered with walk hint
-      _sign(ctx,W/2,Y,SW,SH,R,color,name,typeStr,ft);
+      // No heading at all — show centered
+      _drawSign(ctx,W/2,Y,SW,SH,R,color,name,typeStr,ft);
       ctx.save();
-      ctx.fillStyle='rgba(255,215,0,0.7)';
+      ctx.fillStyle='rgba(255,215,0,0.8)';
       ctx.font='12px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText('\uD83D\uDEB6 Walk a few steps to lock position',W/2,Y+SH/2+22);
+      ctx.fillText('\uD83D\uDEB6 Walk a few steps to lock position',W/2,Y+SH/2+24);
       ctx.restore();
       return;
     }
 
-    // Angle between where phone points and where sign is
+    // Angle between phone direction and sign bearing
     let diff=(c._b - h + 360)%360;
-    if(diff>180) diff-=360; // -180..+180
+    if(diff>180) diff-=360; // -180 to +180
 
-    const x=W/2+(diff/HFOV)*W;
+    const x=W/2 + (diff/HFOV)*W;
 
-    // Off-screen — edge arrow
+    // Off-screen edge arrows
     if(x < -SW/2-20 || x > W+SW/2+20){
       const ax=diff<0?36:W-36;
       ctx.save();
@@ -298,57 +327,48 @@ function draw(){
       ctx.fillStyle=color;ctx.globalAlpha=0.9;
       ctx.font='bold 32px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
       ctx.fillText(diff<0?'\u25C0':'\u25B6',ax,H*0.3);
-      ctx.globalAlpha=0.7;
-      ctx.fillStyle='#fff';
+      ctx.globalAlpha=0.7;ctx.fillStyle='#fff';
       ctx.font='10px sans-serif';
-      ctx.fillText(trunc(name,14),ax,H*0.3+26);
-      ctx.fillText(`${ft} ft`,ax,H*0.3+40);
+      ctx.fillText(trunc(name,14),ax,H*0.3+28);
+      ctx.fillText(`${ft} ft`,ax,H*0.3+42);
       ctx.restore();
       return;
     }
 
-    _sign(ctx,x,Y,SW,SH,R,color,name,typeStr,ft);
+    _drawSign(ctx,x,Y,SW,SH,R,color,name,typeStr,ft);
   });
 
-  // Compass bar
-  if(h!==null) _compassBar(ctx,W,h);
+  if(h!==null) _drawCompassBar(ctx,W,h);
 }
 
-function _sign(ctx,x,Y,SW,SH,R,color,name,typeStr,ft){
+function _drawSign(ctx,x,Y,SW,SH,R,color,name,typeStr,ft){
   ctx.save();
   ctx.shadowColor=color;ctx.shadowBlur=32;
-  // Panel
   rr(ctx,x-SW/2,Y-SH/2,SW,SH,R);
   ctx.fillStyle='rgba(0,0,0,0.88)';ctx.fill();
-  // Border
   rr(ctx,x-SW/2,Y-SH/2,SW,SH,R);
   ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.stroke();
-  // Top/bottom bars
   ctx.fillStyle=color;ctx.globalAlpha=0.9;
   rr(ctx,x-SW/2+R,Y-SH/2,SW-R*2,5,2);ctx.fill();
   rr(ctx,x-SW/2+R,Y+SH/2-5,SW-R*2,5,2);ctx.fill();
   ctx.globalAlpha=1;
-  // Name
   ctx.fillStyle=color;
   ctx.font=`bold 18px 'Segoe UI',sans-serif`;
   ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillText(trunc(name,22),x,Y-11);
-  // Sub
   ctx.fillStyle='rgba(255,255,255,0.5)';
   ctx.font=`11px 'Segoe UI',sans-serif`;
   ctx.fillText(`${typeStr}  \u00b7  ${ft} FT`,x,Y+16);
-  // Arrow down
   ctx.fillStyle=color;ctx.globalAlpha=0.8;
   const ay=Y+SH/2+12;
   ctx.beginPath();ctx.moveTo(x-12,ay);ctx.lineTo(x+12,ay);ctx.lineTo(x,ay+18);ctx.closePath();ctx.fill();
-  // Dashed line
   ctx.globalAlpha=0.15;ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.setLineDash([5,5]);
   ctx.beginPath();ctx.moveTo(x,ay+18);ctx.lineTo(x,ctx.canvas.height*0.72);ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
 }
 
-function _compassBar(ctx,W,h){
+function _drawCompassBar(ctx,W,h){
   ctx.save();
   ctx.fillStyle='rgba(0,0,0,0.55)';
   rr(ctx,W/2-70,50,140,20,10);ctx.fill();
