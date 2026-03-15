@@ -10,424 +10,321 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    html, body { width:100%; height:100%; overflow:hidden; background:#000; font-family:'Segoe UI',sans-serif; touch-action:none; }
-
-    /* Camera feed fills screen */
-    #camera-feed {
-      position:fixed; inset:0; width:100%; height:100%;
-      object-fit:cover; z-index:1;
-    }
-
-    /* AR canvas sits on top of camera */
-    #ar-canvas {
-      position:fixed; inset:0; width:100%; height:100%;
-      z-index:2; pointer-events:none;
-    }
+    html, body { width:100%; height:100%; overflow:hidden; background:#000; font-family:'Segoe UI',sans-serif; }
+    #vid { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; z-index:1; }
+    #canvas { position:fixed; inset:0; width:100%; height:100%; z-index:2; pointer-events:none; }
 
     /* HUD */
     #hud {
-      position:fixed; top:0; left:0; right:0; z-index:10;
+      position:fixed; top:0; left:0; right:0; z-index:10; display:none;
       background:rgba(0,0,0,0.75); backdrop-filter:blur(10px);
-      padding:10px 16px;
-      display:flex; align-items:center; justify-content:space-between;
+      padding:10px 16px; display:none;
       border-bottom:1px solid rgba(0,243,255,0.2);
     }
+    #hud-inner { display:flex; align-items:center; justify-content:space-between; }
     #hud-logo { font-size:18px; font-weight:900; color:#00f3ff; letter-spacing:1px; text-shadow:0 0 10px #00f3ff80; }
-    #hud-right { text-align:right; }
-    .hud-stat { font-size:10px; display:block; }
-    .green  { color:#00ff66; }
-    .yellow { color:#ffd700; }
-    .red    { color:#ff4466; }
-    .gray   { color:#555; }
+    .hst { font-size:10px; display:block; text-align:right; margin-top:2px; }
+    .green{color:#00ff66;} .yellow{color:#ffd700;} .red{color:#ff4466;} .gray{color:#555;}
 
-    /* Bottom cards */
-    #cards {
-      position:fixed; bottom:0; left:0; right:0; z-index:10;
-      padding:10px 10px 24px;
-      background:linear-gradient(transparent, rgba(0,0,0,0.9));
-      display:none;
-    }
-    #cards-row { display:flex; gap:8px; overflow-x:auto; }
-    #cards-row::-webkit-scrollbar { display:none; }
-    .card {
-      flex-shrink:0; min-width:155px; background:rgba(0,0,0,0.85);
-      border-radius:12px; padding:10px 13px;
-      border:1px solid rgba(0,243,255,0.3);
-    }
-    .card-name { font-size:12px; font-weight:700; color:#fff; margin-bottom:3px; }
-    .card-dist { font-size:11px; font-weight:600; margin-bottom:2px; }
-    .card-loc  { font-size:10px; color:#555; }
+    /* Cards */
+    #cards { position:fixed; bottom:0; left:0; right:0; z-index:10; padding:10px 10px 24px; background:linear-gradient(transparent,rgba(0,0,0,0.9)); display:none; }
+    #crow { display:flex; gap:8px; overflow-x:auto; }
+    #crow::-webkit-scrollbar{display:none;}
+    .card { flex-shrink:0; min-width:155px; background:rgba(0,0,0,0.85); border-radius:12px; padding:10px 13px; border:1px solid rgba(0,243,255,0.3); }
+    .cn { font-size:12px; font-weight:700; color:#fff; margin-bottom:3px; }
+    .cd { font-size:11px; font-weight:600; margin-bottom:2px; }
+    .cl { font-size:10px; color:#555; }
 
-    /* Startup screen */
-    #startup {
-      position:fixed; inset:0; z-index:999;
-      background:#000; color:#fff;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      padding:32px; text-align:center;
-    }
-    #startup.gone { display:none; }
-    .logo { font-size:38px; font-weight:900; color:#00f3ff; text-shadow:0 0 24px #00f3ff80; margin-bottom:6px; }
-    .tagline { font-size:13px; color:#555; margin-bottom:36px; }
-    .start-btn {
-      background:#00f3ff; color:#000; font-weight:800; font-size:16px;
-      border:none; border-radius:14px; padding:16px 0; width:100%; max-width:280px;
-      cursor:pointer; box-shadow:0 0 24px #00f3ff50;
-    }
-    .start-btn:disabled { opacity:0.5; cursor:default; }
-    .start-msg { font-size:12px; color:#444; margin-top:14px; min-height:18px; }
-    .steps { margin-top:28px; text-align:left; max-width:280px; }
-    .step { font-size:12px; color:#333; padding:7px 0; border-bottom:1px solid #111; display:flex; gap:10px; align-items:flex-start; }
-    .step-num { color:#00f3ff; font-weight:700; flex-shrink:0; }
-
-    /* Compass indicator */
-    #compass {
-      position:fixed; top:58px; left:50%; transform:translateX(-50%);
-      z-index:10; display:none;
-      background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.1);
-      border-radius:20px; padding:4px 12px;
-      font-size:10px; color:#555;
-    }
+    /* Startup */
+    #start { position:fixed; inset:0; z-index:999; background:#000; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; text-align:center; }
+    #start.gone{display:none;}
+    .logo{font-size:38px;font-weight:900;color:#00f3ff;text-shadow:0 0 24px #00f3ff80;margin-bottom:6px;}
+    .sub{font-size:13px;color:#555;margin-bottom:36px;}
+    .sbtn{background:#00f3ff;color:#000;font-weight:800;font-size:16px;border:none;border-radius:14px;padding:16px 0;width:100%;max-width:280px;cursor:pointer;box-shadow:0 0 24px #00f3ff50;}
+    .sbtn:disabled{opacity:0.5;}
+    .smsg{font-size:12px;color:#444;margin-top:14px;min-height:18px;}
+    .steps{margin-top:28px;text-align:left;max-width:280px;}
+    .stp{font-size:12px;color:#333;padding:7px 0;border-bottom:1px solid #111;display:flex;gap:10px;}
+    .stn{color:#00f3ff;font-weight:700;flex-shrink:0;}
   </style>
 </head>
 <body>
 
-<!-- Startup -->
-<div id="startup">
+<div id="start">
   <div class="logo">COHUA</div>
-  <div class="tagline">Augmented Reality Ad Network</div>
-  <button class="start-btn" id="start-btn" onclick="boot()">&#x1F4F7;&nbsp; Open AR Camera</button>
-  <p class="start-msg" id="start-msg">Camera &amp; location required</p>
+  <div class="sub">Augmented Reality Ad Network</div>
+  <button class="sbtn" id="sbtn" onclick="boot()">&#x1F4F7;&nbsp; Open AR Camera</button>
+  <p class="smsg" id="smsg">Camera &amp; location required</p>
   <div class="steps">
-    <div class="step"><span class="step-num">1</span><span>Allow camera when prompted</span></div>
-    <div class="step"><span class="step-num">2</span><span>Allow location when prompted</span></div>
-    <div class="step"><span class="step-num">3</span><span>Point phone at nearby businesses</span></div>
+    <div class="stp"><span class="stn">1</span><span>Allow camera when prompted</span></div>
+    <div class="stp"><span class="stn">2</span><span>Allow location when prompted</span></div>
+    <div class="stp"><span class="stn">3</span><span>Point phone at nearby businesses</span></div>
   </div>
 </div>
 
-<!-- Camera passthrough -->
-<video id="camera-feed" autoplay playsinline muted></video>
+<video id="vid" autoplay playsinline muted></video>
+<canvas id="canvas"></canvas>
 
-<!-- AR overlay canvas -->
-<canvas id="ar-canvas"></canvas>
-
-<!-- HUD -->
-<div id="hud" style="display:none">
-  <div id="hud-logo">COHUA</div>
-  <div id="hud-right">
-    <span class="hud-stat yellow" id="stat-gps">&#9679; Locating...</span>
-    <span class="hud-stat gray"   id="stat-ads">Scanning...</span>
+<div id="hud">
+  <div id="hud-inner">
+    <div id="hud-logo">COHUA</div>
+    <div>
+      <span class="hst yellow" id="sg">&#9679; Locating...</span>
+      <span class="hst gray"   id="sa">Scanning...</span>
+    </div>
   </div>
 </div>
 
-<!-- Compass debug -->
-<div id="compass"></div>
-
-<!-- Bottom cards -->
-<div id="cards">
-  <div id="cards-row"></div>
-</div>
+<div id="cards"><div id="crow"></div></div>
 
 <script>
-const SB_URL = 'https://sgredejirqatcmstlzqi.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNncmVkZWppcnFhdGNtc3RsenFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDY3NTUsImV4cCI6MjA4ODU4Mjc1NX0.bV19P9HmMSDe4JGAmJHcmCIjN3kbZvHTuurmCRVD_sA';
-const sb = window.supabase.createClient(SB_URL, SB_KEY);
+const SB_URL='https://sgredejirqatcmstlzqi.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNncmVkZWppcnFhdGNtc3RsenFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDY3NTUsImV4cCI6MjA4ODU4Mjc1NX0.bV19P9HmMSDe4JGAmJHcmCIjN3kbZvHTuurmCRVD_sA';
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
 
-const RADIUS_M = 914;   // 3000 ft
-const SCAN_MS  = 6000;
+const RADIUS_M=914; // 3000 ft
+const SCAN_MS=6000;
+const H_FOV=65; // degrees horizontal field of view
 
-let userLat = null, userLng = null;
-let heading = 0;        // degrees, 0=north, clockwise
-let campaigns = [];
-let animFrame = null;
-let scanTimer = null;
-let running   = false;
+let uLat=null,uLng=null;
+let heading=null; // null = compass not yet available
+let campaigns=[];
+let raf=null, scanTmr=null, running=false;
+let startTime=0;
 
-// ── helpers ──────────────────────────────────────────────────────────────────
-function haversine(la1,lo1,la2,lo2){
-  const R=6371000,r=Math.PI/180;
-  const dLa=(la2-la1)*r, dLo=(lo2-lo1)*r;
-  const a=Math.sin(dLa/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLo/2)**2;
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
-const toFt = m=>Math.round(m*3.28084);
-function bearing(la1,lo1,la2,lo2){
-  const r=Math.PI/180;
-  const dLo=(lo2-lo1)*r;
-  const y=Math.sin(dLo)*Math.cos(la2*r);
-  const x=Math.cos(la1*r)*Math.sin(la2*r)-Math.sin(la1*r)*Math.cos(la2*r)*Math.cos(dLo);
-  return (Math.atan2(y,x)*180/Math.PI+360)%360;
-}
-function neonColor(c){
-  try{ return JSON.parse(c.deploy_payload||'{}').neon_color||'#ff00ff'; }catch{ return '#ff00ff'; }
-}
-function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+// helpers
+function hav(a1,o1,a2,o2){const R=6371000,r=Math.PI/180,da=(a2-a1)*r,do2=(o2-o1)*r,s=Math.sin(da/2)**2+Math.cos(a1*r)*Math.cos(a2*r)*Math.sin(do2/2)**2;return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));}
+const toFt=m=>Math.round(m*3.28084);
+function brg(a1,o1,a2,o2){const r=Math.PI/180,dO=(o2-o1)*r,y=Math.sin(dO)*Math.cos(a2*r),x=Math.cos(a1*r)*Math.sin(a2*r)-Math.sin(a1*r)*Math.cos(a2*r)*Math.cos(dO);return(Math.atan2(y,x)*180/Math.PI+360)%360;}
+function nc(c){try{return JSON.parse(c.deploy_payload||'{}').neon_color||'#ff00ff';}catch{return'#ff00ff';}}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
+function trunc(s,n){return s.length>n?s.slice(0,n)+'\u2026':s;}
 
-// ── BOOT ──────────────────────────────────────────────────────────────────────
 async function boot(){
-  const btn=document.getElementById('start-btn');
-  const msg=document.getElementById('start-msg');
-  btn.disabled=true; btn.textContent='Starting...';
-
-  // Camera
+  const btn=document.getElementById('sbtn'),msg=document.getElementById('smsg');
+  btn.disabled=true;btn.textContent='Starting...';
   msg.textContent='Requesting camera...';
   let stream;
   try{
-    stream = await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:'environment', width:{ideal:1280}, height:{ideal:720}},
-      audio:false
-    });
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
   }catch(e){
-    msg.textContent='Camera denied. Allow in browser settings and refresh.';
-    btn.disabled=false; btn.textContent='\uD83D\uDCF7 Open AR Camera'; return;
+    msg.textContent='Camera denied. Allow camera in browser settings and refresh.';
+    btn.disabled=false;btn.textContent='\uD83D\uDCF7 Open AR Camera';return;
   }
-  const vid=document.getElementById('camera-feed');
-  vid.srcObject=stream;
-  await vid.play();
-
-  // GPS
-  if(!navigator.geolocation){msg.textContent='GPS not supported.'; btn.disabled=false; return;}
+  const vid=document.getElementById('vid');
+  vid.srcObject=stream;await vid.play();
+  if(!navigator.geolocation){msg.textContent='GPS not supported.';btn.disabled=false;return;}
   msg.textContent='Getting location...';
   navigator.geolocation.getCurrentPosition(
-    pos=>{ userLat=pos.coords.latitude; userLng=pos.coords.longitude; _go(); },
-    ()=>{ msg.textContent='Location denied. Enable location and refresh.'; btn.disabled=false; btn.textContent='\uD83D\uDCF7 Open AR Camera'; },
+    p=>{uLat=p.coords.latitude;uLng=p.coords.longitude;_go();},
+    ()=>{msg.textContent='Location denied. Enable location and refresh.';btn.disabled=false;btn.textContent='\uD83D\uDCF7 Open AR Camera';},
     {enableHighAccuracy:true,timeout:15000,maximumAge:0}
   );
 }
 
 function _go(){
-  running=true;
-  document.getElementById('startup').classList.add('gone');
-  document.getElementById('hud').style.display='flex';
-
-  // Resize canvas
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
+  running=true;startTime=Date.now();
+  document.getElementById('start').classList.add('gone');
+  const hud=document.getElementById('hud');hud.style.display='block';
+  const c=document.getElementById('canvas');c.width=window.innerWidth;c.height=window.innerHeight;
+  window.addEventListener('resize',()=>{c.width=window.innerWidth;c.height=window.innerHeight;});
 
   // GPS watch
   navigator.geolocation.watchPosition(
-    p=>{
-      userLat=p.coords.latitude; userLng=p.coords.longitude;
-      const el=document.getElementById('stat-gps');
-      el.textContent=`\u2022 GPS \u00b1${Math.round(p.coords.accuracy)}m`;
-      el.className='hud-stat green';
-    },
-    ()=>{ const el=document.getElementById('stat-gps'); el.textContent='\u2022 GPS lost'; el.className='hud-stat red'; },
+    p=>{uLat=p.coords.latitude;uLng=p.coords.longitude;
+      const e=document.getElementById('sg');e.textContent=`\u2022 GPS \u00b1${Math.round(p.coords.accuracy)}m`;e.className='hst green';},
+    ()=>{const e=document.getElementById('sg');e.textContent='\u2022 GPS lost';e.className='hst red';},
     {enableHighAccuracy:true,timeout:5000,maximumAge:2000}
   );
 
-  // Compass / orientation
-  _startCompass();
+  // Compass
+  _compass();
 
-  // First scan
   scan();
-  scanTimer=setInterval(scan,SCAN_MS);
-
-  // Render loop
-  animFrame=requestAnimationFrame(renderLoop);
+  scanTmr=setInterval(scan,SCAN_MS);
+  raf=requestAnimationFrame(loop);
 }
 
-function resizeCanvas(){
-  const c=document.getElementById('ar-canvas');
-  c.width=window.innerWidth; c.height=window.innerHeight;
-}
-
-// ── COMPASS ───────────────────────────────────────────────────────────────────
-function _startCompass(){
-  // DeviceOrientationEvent — works on iOS 13+ with permission, Android always
-  const handler=e=>{
-    if(e.webkitCompassHeading!==undefined){
-      // iOS: webkitCompassHeading is 0=North clockwise, already corrected
-      heading=e.webkitCompassHeading;
-    } else if(e.alpha!==null){
-      // Android: alpha is CCW from South, convert to CW from North
-      heading=(360-e.alpha)%360;
-    }
-    document.getElementById('compass').textContent=`Heading: ${Math.round(heading)}\u00b0`;
+function _compass(){
+  const h=e=>{
+    if(e.webkitCompassHeading!=null) heading=e.webkitCompassHeading;
+    else if(e.alpha!=null) heading=(360-e.alpha)%360;
   };
-
-  if(typeof DeviceOrientationEvent!=='undefined' &&
-     typeof DeviceOrientationEvent.requestPermission==='function'){
-    // iOS 13+
-    DeviceOrientationEvent.requestPermission().then(state=>{
-      if(state==='granted') window.addEventListener('deviceorientation', handler);
-      document.getElementById('compass').style.display='block';
-    }).catch(()=>{});
+  if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
+    DeviceOrientationEvent.requestPermission().then(s=>{if(s==='granted')window.addEventListener('deviceorientation',h,true);}).catch(()=>{});
   } else {
-    window.addEventListener('deviceorientation', handler);
-    document.getElementById('compass').style.display='block';
+    window.addEventListener('deviceorientation',h,true);
   }
 }
 
-// ── SCAN SUPABASE ─────────────────────────────────────────────────────────────
 async function scan(){
-  if(!userLat||!userLng) return;
-  document.getElementById('stat-ads').textContent='Scanning...';
+  if(!uLat||!uLng)return;
+  document.getElementById('sa').textContent='Scanning...';
   const {data,error}=await sb.from('campaigns')
     .select('id,name,asset_type,latitude,longitude,location_label,deploy_payload')
     .eq('status','live').not('latitude','is',null);
-  if(error){ console.error(error); return; }
-  campaigns=(data||[])
-    .map(c=>({...c,
-      _m: haversine(userLat,userLng,c.latitude,c.longitude),
-      _bear: bearing(userLat,userLng,c.latitude,c.longitude)
-    }))
-    .filter(c=>c._m<=RADIUS_M)
-    .sort((a,b)=>a._m-b._m);
-
-  const el=document.getElementById('stat-ads');
-  if(campaigns.length){
-    el.textContent=`${campaigns.length} AR ad${campaigns.length>1?'s':''} nearby`;
-    el.className='hud-stat green';
-  } else {
-    el.textContent='No AR ads within 3,000 ft';
-    el.className='hud-stat gray';
-  }
+  if(error)return;
+  campaigns=(data||[]).map(c=>({...c,_m:hav(uLat,uLng,c.latitude,c.longitude),_b:brg(uLat,uLng,c.latitude,c.longitude)}))
+    .filter(c=>c._m<=RADIUS_M).sort((a,b)=>a._m-b._m);
+  const e=document.getElementById('sa');
+  if(campaigns.length){e.textContent=`${campaigns.length} AR ad${campaigns.length>1?'s':''} nearby`;e.className='hst green';}
+  else{e.textContent='No AR ads within 3,000 ft';e.className='hst gray';}
   renderCards();
 }
 
-// ── RENDER LOOP ───────────────────────────────────────────────────────────────
-function renderLoop(){
-  drawAR();
-  animFrame=requestAnimationFrame(renderLoop);
-}
+function loop(){draw();raf=requestAnimationFrame(loop);}
 
-// Field of view: assume ~60 degrees horizontal
-const H_FOV = 60;
-
-function drawAR(){
-  const canvas=document.getElementById('ar-canvas');
+function draw(){
+  const canvas=document.getElementById('canvas');
   const ctx=canvas.getContext('2d');
-  const W=canvas.width, H=canvas.height;
+  const W=canvas.width,H=canvas.height;
   ctx.clearRect(0,0,W,H);
+  if(!campaigns.length||!uLat)return;
 
-  if(!campaigns.length||!userLat) return;
+  const compassReady=heading!==null;
+  const elapsed=Date.now()-startTime;
 
-  campaigns.forEach(c=>{
-    const color=neonColor(c);
+  campaigns.forEach((c,i)=>{
+    const color=nc(c);
     const name=c.name.replace(/\[DEMO\]\s*/,'').trim();
     const ft=toFt(c._m);
+    const typeStr={neon_logo:'NEON LOGO',neon_menu:'NEON MENU',neon_image:'NEON IMAGE',custom_3d:'3D AD'}[c.asset_type]||'AR AD';
 
-    // Angle of this sign relative to phone heading
-    // bearingDiff: how many degrees off-center is this sign
-    let diff=(c._bear-heading+360)%360;
-    if(diff>180) diff-=360;  // -180 to +180
+    let x, showDirectionArrow=false, offScreenDir=0;
 
-    // Only render if within FOV (with a little extra so signs slide in)
-    if(Math.abs(diff)>H_FOV*0.75) return;
+    if(compassReady){
+      // Compass is working — position sign based on bearing
+      let diff=(c._b-heading+360)%360;
+      if(diff>180)diff-=360; // -180 to +180
+      // x = where on screen horizontally
+      x=W/2+(diff/H_FOV)*W;
 
-    // X position: center of screen + offset based on bearing diff
-    const x = W/2 + (diff/H_FOV)*W;
-    // Y position: fixed at 35% from top (upper portion of screen)
-    const Y_BASE = H * 0.35;
+      // If sign is off-screen, draw an arrow pointing toward it
+      if(x<-100||x>W+100){
+        showDirectionArrow=true;
+        offScreenDir=diff; // negative=left, positive=right
+        // Don't draw the sign if it's way off screen
+        if(Math.abs(diff)>160)return;
+        // Clamp to edge with arrow
+        x=diff<0?40:W-40;
+      }
+    } else {
+      // No compass yet — center the sign with "look around" hint
+      x=W/2;
+    }
 
-    // Sign dimensions
-    const SW=260, SH=90, R=14;
+    const SW=Math.min(W*0.82,300), SH=100, R=14;
+    const Y=H*0.28; // upper area of screen
 
-    // Glow effect
     ctx.save();
-    ctx.shadowColor=color;
-    ctx.shadowBlur=32;
+    ctx.shadowColor=color;ctx.shadowBlur=28;
 
-    // Backing panel
-    roundRect(ctx, x-SW/2, Y_BASE-SH/2, SW, SH, R);
-    ctx.fillStyle='rgba(0,0,0,0.82)';
-    ctx.fill();
+    // Panel
+    rr(ctx,x-SW/2,Y-SH/2,SW,SH,R);
+    ctx.fillStyle='rgba(0,0,0,0.88)';ctx.fill();
 
     // Neon border
-    roundRect(ctx, x-SW/2, Y_BASE-SH/2, SW, SH, R);
-    ctx.strokeStyle=color;
-    ctx.lineWidth=2.5;
-    ctx.stroke();
+    rr(ctx,x-SW/2,Y-SH/2,SW,SH,R);
+    ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.stroke();
 
-    // Top neon bar
-    ctx.fillStyle=color;
-    ctx.globalAlpha=0.9;
-    roundRect(ctx, x-SW/2+R, Y_BASE-SH/2, SW-R*2, 4, 2);
-    ctx.fill();
-
-    // Bottom neon bar
-    roundRect(ctx, x-SW/2+R, Y_BASE+SH/2-4, SW-R*2, 4, 2);
-    ctx.fill();
-
+    // Top bar
+    ctx.fillStyle=color;ctx.globalAlpha=0.9;
+    rr(ctx,x-SW/2+R,Y-SH/2,SW-R*2,5,2);ctx.fill();
+    // Bottom bar
+    rr(ctx,x-SW/2+R,Y+SH/2-5,SW-R*2,5,2);ctx.fill();
     ctx.globalAlpha=1;
 
-    // Business name
+    // Name text
+    const fontSize=Math.min(20,SW/name.length*1.5+4);
     ctx.fillStyle=color;
-    ctx.font='bold 17px \'Segoe UI\', sans-serif';
-    ctx.textAlign='center';
-    ctx.textBaseline='middle';
-    ctx.fillText(truncate(name,22), x, Y_BASE-12);
+    ctx.font=`bold ${fontSize}px 'Segoe UI',sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(trunc(name,24),x,Y-11);
 
     // Distance
-    ctx.fillStyle='rgba(255,255,255,0.5)';
-    ctx.font='11px \'Segoe UI\', sans-serif';
-    ctx.fillText(`${ft} FT AWAY`, x, Y_BASE+14);
+    ctx.fillStyle='rgba(255,255,255,0.55)';
+    ctx.font=`11px 'Segoe UI',sans-serif`;
+    ctx.fillText(`${typeStr}  \u00b7  ${ft} FT AWAY`,x,Y+16);
 
-    // Arrow pointing down toward business
-    ctx.fillStyle=color;
-    ctx.globalAlpha=0.8;
-    const arrowY = Y_BASE+SH/2+12;
-    ctx.beginPath();
-    ctx.moveTo(x-10, arrowY);
-    ctx.lineTo(x+10, arrowY);
-    ctx.lineTo(x, arrowY+18);
-    ctx.closePath();
-    ctx.fill();
+    // If compass not ready, show "look around" hint below sign
+    if(!compassReady){
+      ctx.fillStyle='rgba(255,255,255,0.3)';
+      ctx.font=`12px 'Segoe UI',sans-serif`;
+      ctx.fillText('\u21BA Slowly rotate phone to locate',x,Y+SH/2+20);
+    }
 
-    // Vertical line from arrow to edge
-    ctx.globalAlpha=0.25;
-    ctx.strokeStyle=color;
-    ctx.lineWidth=1.5;
-    ctx.setLineDash([4,4]);
+    // Direction arrow (when sign is off-screen edge)
+    if(showDirectionArrow){
+      const ax=diff<0?28:W-28, ay=Y;
+      ctx.fillStyle=color;ctx.globalAlpha=0.9;
+      ctx.font=`bold 28px sans-serif`;
+      ctx.fillText(diff<0?'\u25C0':'\u25B6',ax,ay);
+      ctx.globalAlpha=1;
+    }
+
+    // Down arrow + dashed line pointing toward business
+    ctx.fillStyle=color;ctx.globalAlpha=0.75;
+    // Downward triangle
+    const arrY=Y+SH/2+14;
     ctx.beginPath();
-    ctx.moveTo(x, arrowY+18);
-    ctx.lineTo(x, H*0.75);
-    ctx.stroke();
+    ctx.moveTo(x-12,arrY);ctx.lineTo(x+12,arrY);ctx.lineTo(x,arrY+20);
+    ctx.closePath();ctx.fill();
+
+    // Dashed line down
+    ctx.globalAlpha=0.2;ctx.strokeStyle=color;ctx.lineWidth=1.5;
+    ctx.setLineDash([5,5]);
+    ctx.beginPath();ctx.moveTo(x,arrY+20);ctx.lineTo(x,H*0.72);ctx.stroke();
     ctx.setLineDash([]);
 
     ctx.restore();
   });
+
+  // Compass indicator — small strip at top
+  if(compassReady){
+    ctx.save();
+    ctx.fillStyle='rgba(0,0,0,0.5)';
+    const cW=120,cH=22;
+    rr(ctx,W/2-cW/2,48,cW,cH,11);
+    ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.4)';
+    ctx.font='10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(`Heading ${Math.round(heading)}\u00b0`,W/2,59);
+    ctx.restore();
+  } else {
+    // "Calibrating compass" banner
+    ctx.save();
+    ctx.fillStyle='rgba(0,0,0,0.55)';
+    const bW=220,bH=24;
+    rr(ctx,W/2-bW/2,48,bW,bH,12);
+    ctx.fill();
+    ctx.fillStyle='rgba(255,215,0,0.7)';
+    ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('\u21BB Calibrating compass... rotate slowly',W/2,60);
+    ctx.restore();
+  }
 }
 
-function roundRect(ctx,x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);
-  ctx.lineTo(x+w-r,y);
-  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r);
-  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  ctx.lineTo(x+r,y+h);
-  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-  ctx.lineTo(x,y+r);
-  ctx.quadraticCurveTo(x,y,x+r,y);
-  ctx.closePath();
-}
-
-function truncate(s,n){ return s.length>n ? s.slice(0,n)+'\u2026':s; }
-
-// ── BOTTOM CARDS ──────────────────────────────────────────────────────────────
 function renderCards(){
-  const el=document.getElementById('cards');
-  const row=document.getElementById('cards-row');
-  if(!campaigns.length){ el.style.display='none'; return; }
+  const el=document.getElementById('cards'),row=document.getElementById('crow');
+  if(!campaigns.length){el.style.display='none';return;}
   el.style.display='block';
   row.innerHTML=campaigns.map(c=>{
-    const color=neonColor(c);
+    const color=nc(c);
     const name=c.name.replace(/\[DEMO\]\s*/,'').trim();
     const loc=c.location_label||`${c.latitude.toFixed(4)}, ${c.longitude.toFixed(4)}`;
     return `<div class="card" style="border-color:${color}50">
-      <div class="card-name">${esc(name)}</div>
-      <div class="card-dist" style="color:${color}">${String.fromCharCode(9670)} ${toFt(c._m)} ft</div>
-      <div class="card-loc">${esc(loc)}</div>
+      <div class="cn">${esc(name)}</div>
+      <div class="cd" style="color:${color}">&#9670; ${toFt(c._m)} ft</div>
+      <div class="cl">${esc(loc)}</div>
     </div>`;
   }).join('');
 }
 
-// Pause/resume
 document.addEventListener('visibilitychange',()=>{
-  if(!running) return;
-  if(document.hidden){ if(animFrame){cancelAnimationFrame(animFrame);animFrame=null;} clearInterval(scanTimer);scanTimer=null; }
-  else{ scan(); scanTimer=setInterval(scan,SCAN_MS); if(!animFrame) animFrame=requestAnimationFrame(renderLoop); }
+  if(!running)return;
+  if(document.hidden){if(raf){cancelAnimationFrame(raf);raf=null;}clearInterval(scanTmr);scanTmr=null;}
+  else{scan();scanTmr=setInterval(scan,SCAN_MS);if(!raf)raf=requestAnimationFrame(loop);}
 });
 </script>
 </body>
