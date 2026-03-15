@@ -4,6 +4,7 @@
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/dashboard-logic.js", "destination": "/dashboard-logic.js" },
     { "source": "/ar", "destination": "/ar.html" },
+    { "source": "/placement", "destination": "/placement.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COHUA | AR Placement Editor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Space Grotesk', sans-serif; background: #060a0f; color: #e0e0e0; margin: 0; }
+
+    /* Map */
+    #map { width: 100%; height: 100%; }
+    .leaflet-container { background: #111 !important; }
+
+    /* Custom neon marker */
+    .neon-marker {
+      width: 36px; height: 36px; border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg); border: 3px solid currentColor;
+      box-shadow: 0 0 12px currentColor;
+      cursor: grab;
+    }
+    .neon-marker-inner {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: currentColor; margin: 10px auto;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    /* Panel */
+    .glass {
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+    .form-input {
+      width: 100%; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      padding: 8px 12px; color: #fff; font-size: 13px;
+      font-family: 'Space Grotesk', sans-serif; outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: rgba(0,243,255,0.5); }
+    .form-label { font-size: 11px; font-weight: 600; color: #666;
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; display: block; }
+    select.form-input option { background: #1a1f2e; }
+    .btn-primary { background: #00f3ff; color: #000; font-weight: 700;
+      border: none; border-radius: 10px; padding: 10px 20px; cursor: pointer;
+      font-size: 13px; transition: all 0.2s; font-family: 'Space Grotesk', sans-serif; }
+    .btn-primary:hover { background: #fff; box-shadow: 0 0 16px rgba(0,243,255,0.5); }
+    .btn-primary:disabled { opacity: 0.5; cursor: default; }
+    .btn-ghost { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 8px 16px; cursor: pointer;
+      font-size: 12px; color: #888; font-family: 'Space Grotesk', sans-serif;
+      transition: all 0.2s; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .neon-text { color: #00f3ff; text-shadow: 0 0 8px rgba(0,243,255,0.6); }
+
+    /* Range input */
+    input[type=range] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 4px; border-radius: 2px;
+      background: rgba(255,255,255,0.1); outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #00f3ff; cursor: pointer;
+      box-shadow: 0 0 8px rgba(0,243,255,0.6);
+    }
+
+    /* Color swatches */
+    .swatch {
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .swatch.active { border-color: #fff; transform: scale(1.2); }
+
+    /* Heading dial */
+    .dial-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+    .dial-bg {
+      width: 80px; height: 80px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.03);
+      position: absolute; inset: 0;
+    }
+    .dial-needle {
+      position: absolute; top: 50%; left: 50%;
+      width: 2px; height: 32px; background: #00f3ff;
+      transform-origin: bottom center;
+      margin-left: -1px; margin-top: -32px;
+      border-radius: 2px;
+      box-shadow: 0 0 6px #00f3ff;
+      transition: transform 0.1s;
+    }
+    .dial-center {
+      position: absolute; top: 50%; left: 50%;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #00f3ff; transform: translate(-50%, -50%);
+      box-shadow: 0 0 6px #00f3ff;
+    }
+    .dial-n { position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+      font-size: 9px; color: #ff4466; font-weight: 700; }
+    .dial-e { position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+      font-size: 9px; color: #555; }
+    .dial-s { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+      font-size: 9px; color: #555; }
+    .dial-w { position: absolute; left: 4px; top: 50%; transform: translateY(-50%);
+      font-size: 9px; color: #555; }
+
+    /* Preview sign */
+    .preview-sign {
+      border-radius: 10px; padding: 10px 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; letter-spacing: 0.5px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      padding: 12px 18px; border-radius: 10px; font-size: 13px;
+      display: none; max-width: 280px;
+    }
+
+    /* Campaign list */
+    .camp-item {
+      padding: 10px 12px; border-radius: 10px; cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.06);
+      transition: all 0.15s;
+    }
+    .camp-item:hover { background: rgba(255,255,255,0.04); border-color: rgba(0,243,255,0.2); }
+    .camp-item.selected { background: rgba(0,243,255,0.08); border-color: rgba(0,243,255,0.35); }
+  </style>
+</head>
+<body class="flex flex-col" style="height:100vh; overflow:hidden">
+
+<!-- Header -->
+<div class="flex items-center justify-between px-6 py-3" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;">
+  <div class="flex items-center gap-3">
+    <a href="/dashboard" class="text-gray-500 hover:text-white text-sm transition-colors">&#8592; Dashboard</a>
+    <span class="text-gray-700">|</span>
+    <span class="font-bold text-lg neon-text">AR Placement Editor</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <span class="text-xs text-gray-600" id="save-status">No changes</span>
+    <button class="btn-primary" id="save-btn" onclick="savePlacement()" disabled>Save Placement</button>
+  </div>
+</div>
+
+<div class="flex flex-1" style="overflow:hidden">
+
+  <!-- LEFT: Campaign List -->
+  <div class="glass flex flex-col" style="width:240px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.06);overflow-y:auto;">
+    <div class="p-4 border-b" style="border-color:rgba(255,255,255,0.06)">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Campaigns</p>
+      <p class="text-xs text-gray-600">Select to edit placement</p>
+    </div>
+    <div id="camp-list" class="p-3 space-y-2 flex-1">
+      <p class="text-xs text-gray-600 text-center py-4">Loading...</p>
+    </div>
+  </div>
+
+  <!-- CENTER: Map -->
+  <div class="flex-1 relative">
+    <div id="map" style="width:100%;height:100%;"></div>
+
+    <!-- Map overlay instructions -->
+    <div id="map-hint" class="absolute top-3 left-1/2 -translate-x-1/2 z-10 px-4 py-2 rounded-full text-xs text-gray-400 pointer-events-none"
+      style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.08)">
+      Select a campaign to begin placement editing
+    </div>
+
+    <!-- Compass overlay -->
+    <div class="absolute bottom-4 right-4 z-10 text-center pointer-events-none"
+      style="background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 12px">
+      <div class="text-xs text-gray-500 mb-1">Sign Facing</div>
+      <div class="dial-wrap mx-auto">
+        <div class="dial-bg"></div>
+        <div class="dial-needle" id="map-dial-needle"></div>
+        <div class="dial-center"></div>
+        <div class="dial-n">N</div>
+        <div class="dial-e">E</div>
+        <div class="dial-s">S</div>
+        <div class="dial-w">W</div>
+      </div>
+      <div class="text-xs mt-1" style="color:#00f3ff" id="map-heading-val">0°</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Placement Controls -->
+  <div class="glass flex flex-col" style="width:300px;flex-shrink:0;border-left:1px solid rgba(255,255,255,0.06);overflow-y:auto;">
+    <div id="no-selection" class="flex flex-col items-center justify-center h-full text-center p-6">
+      <div class="text-4xl mb-3" style="opacity:0.2">&#x1F4CD;</div>
+      <p class="text-sm text-gray-500">Select a campaign from the list to edit its AR placement</p>
+    </div>
+
+    <div id="placement-panel" class="hidden p-4 space-y-5">
+
+      <!-- Campaign name -->
+      <div>
+        <p class="text-xs text-gray-600 mb-1">Editing</p>
+        <p class="font-bold text-sm" id="panel-name">—</p>
+        <p class="text-xs" style="color:#00f3ff" id="panel-coords">—</p>
+      </div>
+
+      <!-- Sign Preview -->
+      <div>
+        <label class="form-label">Sign Preview</label>
+        <div class="rounded-xl p-3" style="background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.06)">
+          <div class="preview-sign" id="preview-sign">BUSINESS NAME</div>
+          <div class="text-center mt-2">
+            <span class="text-xs text-gray-600">Neon color preview</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Neon Color -->
+      <div>
+        <label class="form-label">Neon Color</label>
+        <div class="flex items-center gap-2 flex-wrap mb-2" id="color-swatches"></div>
+        <div class="flex items-center gap-2">
+          <input type="color" id="custom-color" value="#00f3ff"
+            class="w-9 h-8 rounded cursor-pointer border-0 bg-transparent"
+            oninput="setColor(this.value)">
+          <input type="text" id="color-hex" class="form-input" style="font-family:monospace;font-size:12px"
+            placeholder="#00f3ff" maxlength="7" oninput="setColor(this.value)">
+        </div>
+      </div>
+
+      <!-- Altitude -->
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <label class="form-label mb-0">Height Above Ground</label>
+          <span class="text-xs font-bold" style="color:#00f3ff" id="alt-val">7m</span>
+        </div>
+        <input type="range" id="alt-slider" min="1" max="30" step="0.5" value="7"
+          oninput="onAltChange(this.value)">
+        <div class="flex justify-between text-xs text-gray-700 mt-1">
+          <span>1m (ground)</span><span>15m</span><span>30m (roof)</span>
+        </div>
+      </div>
+
+      <!-- Sign Heading -->
+      <div>
+        <div class="flex justify-between items-center mb-2">
+          <label class="form-label mb-0">Sign Facing Direction</label>
+          <span class="text-xs font-bold" style="color:#00f3ff" id="heading-val">0° N</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="dial-wrap" id="dial" style="cursor:pointer">
+            <div class="dial-bg"></div>
+            <div class="dial-needle" id="dial-needle"></div>
+            <div class="dial-center"></div>
+            <div class="dial-n">N</div>
+            <div class="dial-e">E</div>
+            <div class="dial-s">S</div>
+            <div class="dial-w">W</div>
+          </div>
+          <div class="flex-1">
+            <input type="range" id="heading-slider" min="0" max="359" step="1" value="0"
+              oninput="onHeadingChange(this.value)">
+            <div class="grid grid-cols-4 gap-1 mt-2">
+              <button class="btn-ghost text-xs py-1 px-0" onclick="setHeading(0)">N</button>
+              <button class="btn-ghost text-xs py-1 px-0" onclick="setHeading(90)">E</button>
+              <button class="btn-ghost text-xs py-1 px-0" onclick="setHeading(180)">S</button>
+              <button class="btn-ghost text-xs py-1 px-0" onclick="setHeading(270)">W</button>
+            </div>
+          </div>
+        </div>
+        <p class="text-xs text-gray-600 mt-1">Set which direction pedestrians will see the sign from</p>
+      </div>
+
+      <!-- Horizontal Offset -->
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <label class="form-label mb-0">Horizontal Offset</label>
+          <span class="text-xs font-bold" style="color:#00f3ff" id="offset-val">0m (centered)</span>
+        </div>
+        <input type="range" id="offset-slider" min="-20" max="20" step="0.5" value="0"
+          oninput="onOffsetChange(this.value)">
+        <div class="flex justify-between text-xs text-gray-700 mt-1">
+          <span>20m left</span><span>center</span><span>20m right</span>
+        </div>
+        <p class="text-xs text-gray-600 mt-1">Shift sign left/right from GPS pin</p>
+      </div>
+
+      <!-- Sign Scale -->
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <label class="form-label mb-0">Sign Scale</label>
+          <span class="text-xs font-bold" style="color:#00f3ff" id="scale-val">1.0x</span>
+        </div>
+        <input type="range" id="scale-slider" min="0.3" max="5" step="0.1" value="1"
+          oninput="onScaleChange(this.value)">
+        <div class="flex justify-between text-xs text-gray-700 mt-1">
+          <span>0.3x small</span><span>1x default</span><span>5x large</span>
+        </div>
+      </div>
+
+      <!-- Trigger Distance -->
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <label class="form-label mb-0">Trigger Radius</label>
+          <span class="text-xs font-bold" style="color:#00f3ff" id="trigger-val">914m (3000ft)</span>
+        </div>
+        <input type="range" id="trigger-slider" min="50" max="1500" step="50" value="914"
+          oninput="onTriggerChange(this.value)">
+        <div class="flex justify-between text-xs text-gray-700 mt-1">
+          <span>50m</span><span>500m</span><span>1500m</span>
+        </div>
+        <p class="text-xs text-gray-600 mt-1">How close someone must be to see this ad</p>
+      </div>
+
+      <!-- GPS Pin -->
+      <div>
+        <label class="form-label">GPS Anchor Pin</label>
+        <p class="text-xs text-gray-500 mb-2">Drag the marker on the map to reposition</p>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="form-label">Lat</label>
+            <input type="number" id="pin-lat" class="form-input" step="0.000001"
+              oninput="onPinInput()" style="font-family:monospace;font-size:11px">
+          </div>
+          <div>
+            <label class="form-label">Lng</label>
+            <input type="number" id="pin-lng" class="form-input" step="0.000001"
+              oninput="onPinInput()" style="font-family:monospace;font-size:11px">
+          </div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex gap-2 pt-2 border-t" style="border-color:rgba(255,255,255,0.06)">
+        <button class="btn-primary flex-1" onclick="savePlacement()">&#x1F4BE; Save</button>
+        <button class="btn-ghost" onclick="previewAR()" title="Preview in AR viewer">&#x1F4F1; AR Preview</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+const SB_URL='https://sgredejirqatcmstlzqi.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNncmVkZWppcnFhdGNtc3RsenFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDY3NTUsImV4cCI6MjA4ODU4Mjc1NX0.bV19P9HmMSDe4JGAmJHcmCIjN3kbZvHTuurmCRVD_sA';
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+
+const COLORS=['#00f3ff','#ff00ff','#00ff66','#ffd700','#ff4466','#ff6600','#ffffff','#7b2fff'];
+
+let map, marker, triggerCircle;
+let campaigns=[];
+let selected=null; // current campaign
+let placement={}; // current editable placement state
+let dirty=false;
+
+// ── INIT MAP ─────────────────────────────────────────────────────────────────
+function initMap(){
+  map = L.map('map', { zoomControl: true, attributionControl: false });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 21, subdomains: 'abcd'
+  }).addTo(map);
+  map.setView([33.9422, -118.1361], 16);
+
+  // Attribution bottom-left
+  L.control.attribution({ position: 'bottomleft', prefix: false })
+    .addAttribution('&copy; <a href="https://carto.com">CARTO</a>')
+    .addTo(map);
+}
+
+function makeMarkerIcon(color){
+  return L.divIcon({
+    className: '',
+    html: `<div style="color:${color};width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid currentColor;box-shadow:0 0 12px ${color};background:rgba(0,0,0,0.7)">
+      <div style="width:10px;height:10px;border-radius:50%;background:${color};margin:10px auto;box-shadow:0 0 8px ${color}"></div>
+    </div>`,
+    iconSize: [36,36], iconAnchor: [18,36]
+  });
+}
+
+// ── LOAD CAMPAIGNS ───────────────────────────────────────────────────────────────
+async function loadCampaigns(){
+  const {data}=await sb.from('campaigns')
+    .select('id,name,status,latitude,longitude,altitude_m,model_scale,deploy_payload,asset_type,location_label')
+    .not('latitude','is',null)
+    .order('created_at',{ascending:false});
+  campaigns=data||[];
+  renderCampList();
+}
+
+function renderCampList(){
+  const el=document.getElementById('camp-list');
+  if(!campaigns.length){
+    el.innerHTML='<p class="text-xs text-gray-600 text-center py-4">No campaigns with GPS coordinates</p>';
+    return;
+  }
+  el.innerHTML=campaigns.map(c=>{
+    const p=parsePayload(c);
+    const color=p.neon_color||'#ff00ff';
+    const statusColor={live:'#00ff66',draft:'#555',paused:'#ffd700',ended:'#ff4466'}[c.status]||'#555';
+    return `<div class="camp-item" id="camp-${c.id}" onclick="selectCampaign('${c.id}')">
+      <div class="flex items-start gap-2">
+        <div style="width:8px;height:8px;border-radius:50%;background:${statusColor};flex-shrink:0;margin-top:4px"></div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-semibold truncate">${esc(c.name)}</p>
+          <p class="text-xs mt-0.5" style="color:${color}">&#9670; ${c.location_label||'No label'}</p>
+          <p class="text-xs text-gray-700 mt-0.5 font-mono">${c.latitude.toFixed(5)}, ${c.longitude.toFixed(5)}</p>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── SELECT CAMPAIGN ───────────────────────────────────────────────────────────────
+function selectCampaign(id){
+  if(dirty && selected && !confirm('You have unsaved changes. Discard?')) return;
+
+  // Deselect previous
+  document.querySelectorAll('.camp-item').forEach(el=>el.classList.remove('selected'));
+  document.getElementById(`camp-${id}`)?.classList.add('selected');
+
+  selected=campaigns.find(c=>c.id===id);
+  if(!selected) return;
+
+  // Load placement state from campaign
+  const p=parsePayload(selected);
+  placement={
+    neon_color: p.neon_color||'#ff00ff',
+    altitude_m: parseFloat(selected.altitude_m)||7,
+    heading: parseFloat(p.heading)||0,
+    offset_m: parseFloat(p.offset_m)||0,
+    scale: parseFloat(selected.model_scale)||1,
+    trigger_m: parseFloat(p.trigger_m)||914,
+  };
+
+  // Update UI
+  document.getElementById('no-selection').classList.add('hidden');
+  document.getElementById('placement-panel').classList.remove('hidden');
+  document.getElementById('panel-name').textContent=selected.name;
+  document.getElementById('panel-coords').textContent=`${selected.latitude.toFixed(6)}, ${selected.longitude.toFixed(6)}`;
+
+  // Sync controls
+  syncControls();
+  updatePreview();
+
+  // Map
+  document.getElementById('map-hint').style.display='none';
+  map.setView([selected.latitude, selected.longitude], 19);
+
+  // Remove old marker
+  if(marker) map.removeLayer(marker);
+  if(triggerCircle) map.removeLayer(triggerCircle);
+
+  // Add draggable marker
+  marker=L.marker([selected.latitude,selected.longitude],{
+    icon: makeMarkerIcon(placement.neon_color),
+    draggable: true,
+    title: selected.name
+  }).addTo(map);
+
+  marker.on('drag',e=>{
+    const ll=e.target.getLatLng();
+    document.getElementById('pin-lat').value=ll.lat.toFixed(6);
+    document.getElementById('pin-lng').value=ll.lng.toFixed(6);
+    selected._newLat=ll.lat; selected._newLng=ll.lng;
+    markDirty();
+    updateTriggerCircle();
+  });
+
+  // Trigger radius circle
+  triggerCircle=L.circle([selected.latitude,selected.longitude],{
+    radius: placement.trigger_m,
+    color: placement.neon_color,
+    fillColor: placement.neon_color,
+    fillOpacity: 0.04,
+    weight: 1,
+    dashArray: '4 4',
+    opacity: 0.4
+  }).addTo(map);
+
+  document.getElementById('pin-lat').value=selected.latitude.toFixed(6);
+  document.getElementById('pin-lng').value=selected.longitude.toFixed(6);
+  dirty=false;
+  updateSaveStatus();
+}
+
+function syncControls(){
+  document.getElementById('alt-slider').value=placement.altitude_m;
+  document.getElementById('alt-val').textContent=`${placement.altitude_m}m`;
+  document.getElementById('heading-slider').value=placement.heading;
+  updateDialNeedle(placement.heading);
+  document.getElementById('heading-val').textContent=`${Math.round(placement.heading)}° ${headingLabel(placement.heading)}`;
+  document.getElementById('offset-slider').value=placement.offset_m;
+  document.getElementById('offset-val').textContent=placement.offset_m===0?'0m (centered)':`${placement.offset_m>0?'+':''}${placement.offset_m}m`;
+  document.getElementById('scale-slider').value=placement.scale;
+  document.getElementById('scale-val').textContent=`${placement.scale.toFixed(1)}x`;
+  document.getElementById('trigger-slider').value=placement.trigger_m;
+  document.getElementById('trigger-val').textContent=`${placement.trigger_m}m (${Math.round(placement.trigger_m*3.28084)}ft)`;
+  document.getElementById('custom-color').value=placement.neon_color;
+  document.getElementById('color-hex').value=placement.neon_color;
+  renderSwatches();
+}
+
+function renderSwatches(){
+  const el=document.getElementById('color-swatches');
+  el.innerHTML=COLORS.map(c=>`
+    <div class="swatch ${c===placement.neon_color?'active':''}" style="background:${c};box-shadow:0 0 8px ${c}60"
+      onclick="setColor('${c}')"></div>`).join('');
+}
+
+// ── CONTROLS ───────────────────────────────────────────────────────────────────
+function setColor(hex){
+  if(!/^#[0-9a-f]{6}$/i.test(hex)) return;
+  placement.neon_color=hex;
+  document.getElementById('custom-color').value=hex;
+  document.getElementById('color-hex').value=hex;
+  renderSwatches();
+  updatePreview();
+  if(marker) marker.setIcon(makeMarkerIcon(hex));
+  if(triggerCircle){ triggerCircle.setStyle({color:hex,fillColor:hex}); }
+  markDirty();
+}
+
+function onAltChange(v){
+  placement.altitude_m=parseFloat(v);
+  document.getElementById('alt-val').textContent=`${v}m`;
+  markDirty();
+}
+
+function onHeadingChange(v){
+  placement.heading=parseFloat(v);
+  updateDialNeedle(v);
+  document.getElementById('heading-val').textContent=`${Math.round(v)}° ${headingLabel(v)}`;
+  markDirty();
+}
+function setHeading(v){
+  placement.heading=v;
+  document.getElementById('heading-slider').value=v;
+  updateDialNeedle(v);
+  document.getElementById('heading-val').textContent=`${v}° ${headingLabel(v)}`;
+  markDirty();
+}
+
+function onOffsetChange(v){
+  placement.offset_m=parseFloat(v);
+  document.getElementById('offset-val').textContent=parseFloat(v)===0?'0m (centered)':`${parseFloat(v)>0?'+':''}${v}m`;
+  markDirty();
+}
+
+function onScaleChange(v){
+  placement.scale=parseFloat(v);
+  document.getElementById('scale-val').textContent=`${parseFloat(v).toFixed(1)}x`;
+  markDirty();
+}
+
+function onTriggerChange(v){
+  placement.trigger_m=parseFloat(v);
+  const ft=Math.round(v*3.28084);
+  document.getElementById('trigger-val').textContent=`${v}m (${ft}ft)`;
+  updateTriggerCircle();
+  markDirty();
+}
+
+function onPinInput(){
+  const lat=parseFloat(document.getElementById('pin-lat').value);
+  const lng=parseFloat(document.getElementById('pin-lng').value);
+  if(!isNaN(lat)&&!isNaN(lng)&&marker){
+    marker.setLatLng([lat,lng]);
+    map.setView([lat,lng]);
+    selected._newLat=lat; selected._newLng=lng;
+    updateTriggerCircle();
+    markDirty();
+  }
+}
+
+function updateDialNeedle(deg){
+  document.getElementById('dial-needle').style.transform=`rotate(${deg}deg)`;
+  document.getElementById('map-dial-needle').style.transform=`rotate(${deg}deg)`;
+  document.getElementById('map-heading-val').textContent=`${Math.round(deg)}°`;
+}
+
+function updateTriggerCircle(){
+  if(!triggerCircle||!selected) return;
+  const lat=selected._newLat||selected.latitude;
+  const lng=selected._newLng||selected.longitude;
+  triggerCircle.setLatLng([lat,lng]);
+  triggerCircle.setRadius(placement.trigger_m);
+}
+
+function headingLabel(deg){
+  const d=((deg%360)+360)%360;
+  if(d<22.5||d>=337.5) return 'N';
+  if(d<67.5) return 'NE';
+  if(d<112.5) return 'E';
+  if(d<157.5) return 'SE';
+  if(d<202.5) return 'S';
+  if(d<247.5) return 'SW';
+  if(d<292.5) return 'W';
+  return 'NW';
+}
+
+function updatePreview(){
+  const sign=document.getElementById('preview-sign');
+  const name=(selected?.name||'BUSINESS NAME').replace(/\[DEMO\]\s*/,'').trim();
+  sign.textContent=name.length>22?name.slice(0,22)+'\u2026':name;
+  sign.style.color=placement.neon_color||'#ff00ff';
+  sign.style.background='rgba(0,0,0,0.88)';
+  sign.style.border=`2px solid ${placement.neon_color||'#ff00ff'}`;
+  sign.style.boxShadow=`0 0 16px ${placement.neon_color||'#ff00ff'}60`;
+  sign.style.textShadow=`0 0 12px ${placement.neon_color||'#ff00ff'}`;
+}
+
+// ── DIRTY / SAVE ───────────────────────────────────────────────────────────────
+function markDirty(){
+  dirty=true;
+  updateSaveStatus();
+}
+
+function updateSaveStatus(){
+  const btn=document.getElementById('save-btn');
+  const status=document.getElementById('save-status');
+  const hdrBtn=document.getElementById('save-btn');
+  if(dirty){
+    btn.disabled=false;
+    status.textContent='Unsaved changes';
+    status.style.color='#ffd700';
+  } else {
+    btn.disabled=true;
+    status.textContent='Saved';
+    status.style.color='#00ff66';
+  }
+}
+
+async function savePlacement(){
+  if(!selected) return;
+  const btn=document.getElementById('save-btn');
+  btn.textContent='Saving...'; btn.disabled=true;
+
+  // Build new deploy_payload merging existing
+  const existing=parsePayload(selected)||{};
+  const newPayload={
+    ...existing,
+    neon_color: placement.neon_color,
+    heading: placement.heading,
+    offset_m: placement.offset_m,
+    trigger_m: placement.trigger_m,
+  };
+
+  const updates={
+    altitude_m: placement.altitude_m,
+    model_scale: placement.scale,
+    deploy_payload: newPayload,
+    updated_at: new Date().toISOString(),
+  };
+
+  // Update GPS if dragged
+  if(selected._newLat!=null){ updates.latitude=selected._newLat; updates.longitude=selected._newLng; }
+
+  const {error}=await sb.from('campaigns').update(updates).eq('id',selected.id);
+  if(error){
+    toast('Save failed: '+error.message,'error');
+    btn.textContent='Save Placement'; btn.disabled=false; return;
+  }
+
+  // Update local
+  selected.altitude_m=placement.altitude_m;
+  selected.model_scale=placement.scale;
+  selected.deploy_payload=newPayload;
+  if(selected._newLat!=null){ selected.latitude=selected._newLat; selected.longitude=selected._newLng; }
+  delete selected._newLat; delete selected._newLng;
+
+  dirty=false;
+  updateSaveStatus();
+  btn.textContent='Save Placement';
+  toast(`\u2713 Placement saved for "${selected.name}"`, 'success');
+  renderCampList(); // refresh list
+  // Re-select to refresh
+  document.getElementById(`camp-${selected.id}`)?.classList.add('selected');
+}
+
+function previewAR(){
+  window.open('/ar','_blank');
+}
+
+// ── UTILS ───────────────────────────────────────────────────────────────────────
+function parsePayload(c){
+  try{ return JSON.parse(c.deploy_payload||'{}'); }catch{ return {}; }
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function toast(msg, type='info', dur=3000){
+  const el=document.getElementById('toast');
+  const colors={success:'rgba(0,255,102,0.15)',error:'rgba(255,68,102,0.15)',info:'rgba(0,243,255,0.1)'};
+  const borders={success:'rgba(0,255,102,0.4)',error:'rgba(255,68,102,0.4)',info:'rgba(0,243,255,0.3)'};
+  el.style.background=colors[type]||colors.info;
+  el.style.border=`1px solid ${borders[type]||borders.info}`;
+  el.style.color='#e0e0e0';
+  el.style.borderRadius='10px';
+  el.textContent=msg;
+  el.style.display='block';
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.style.display='none',dur);
+}
+
+// Keyboard shortcut: Ctrl+S
+document.addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey)&&e.key==='s'){ e.preventDefault(); if(dirty) savePlacement(); } });
+
+// Init
+initMap();
+loadCampaigns();
+</script>
+</body>
+</html>
