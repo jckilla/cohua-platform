@@ -8,439 +8,391 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>COHUA AR</title>
 
-  <!-- A-Frame + AR.js (GPS-based AR) -->
-  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+  <!-- A-Frame 1.3.0 (stable) + AR.js 2.x (stable GPS components: gps-camera + gps-entity-place) -->
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { width:100%; height:100%; overflow:hidden; background:#000; font-family:'Segoe UI',sans-serif; }
 
-    /* HUD overlay */
+    /* Startup screen */
+    #startup {
+      position:fixed; inset:0; z-index:9999;
+      background:#000;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:32px; text-align:center; color:#fff;
+    }
+    #startup.hidden { display:none; }
+    .s-logo { font-size:36px; font-weight:900; color:#00f3ff; letter-spacing:2px; text-shadow:0 0 24px #00f3ff80; margin-bottom:8px; }
+    .s-sub  { font-size:13px; color:#666; margin-bottom:40px; }
+    .s-btn  { background:#00f3ff; color:#000; font-weight:800; font-size:16px; border:none; border-radius:14px; padding:16px 32px; cursor:pointer; box-shadow:0 0 24px #00f3ff60; width:100%; max-width:280px; }
+    .s-btn:disabled { opacity:0.5; }
+    .s-msg  { font-size:12px; color:#555; margin-top:14px; min-height:18px; }
+    .s-steps { margin-top:28px; text-align:left; max-width:280px; }
+    .s-step { font-size:12px; color:#444; padding:6px 0; border-bottom:1px solid #111; display:flex; gap:10px; }
+    .s-step span { color:#00f3ff; font-weight:700; }
+
+    /* HUD */
     #hud {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
-      pointer-events: none;
+      position:fixed; top:0; left:0; right:0; z-index:8000;
+      pointer-events:none;
     }
     #hud-bar {
-      background: rgba(0,0,0,0.75); backdrop-filter: blur(10px);
-      padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1px solid rgba(0,243,255,0.2);
+      background:rgba(0,0,0,0.8); backdrop-filter:blur(12px);
+      padding:10px 16px;
+      display:flex; align-items:center; justify-content:space-between;
+      border-bottom:1px solid rgba(0,243,255,0.15);
     }
-    #hud-logo { color: #00f3ff; font-weight: 800; font-size: 18px; letter-spacing: 1px; text-shadow: 0 0 10px #00f3ff; }
-    #hud-status { font-size: 11px; color: #888; text-align: right; }
-    #hud-status span { display: block; }
-    #hud-status .active { color: #00ff66; }
-    #hud-status .searching { color: #ffd700; }
-    #hud-status .error { color: #ff4466; }
+    #hud-logo { font-size:17px; font-weight:900; color:#00f3ff; letter-spacing:1px; text-shadow:0 0 8px #00f3ff; }
+    #hud-right { text-align:right; }
+    .hud-line { font-size:10px; display:block; margin-top:1px; }
+    .hud-green { color:#00ff66; }
+    .hud-yellow { color:#ffd700; }
+    .hud-red { color:#ff4466; }
+    .hud-gray { color:#555; }
 
-    /* Campaign cards that float at bottom when nearby */
-    #nearby-panel {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
-      padding: 12px; pointer-events: auto;
-      background: linear-gradient(transparent, rgba(0,0,0,0.85));
+    /* Nearby cards strip */
+    #cards-strip {
+      position:fixed; bottom:0; left:0; right:0; z-index:8000;
+      padding:10px 10px 20px;
+      background:linear-gradient(transparent,rgba(0,0,0,0.9));
+      display:none;
     }
-    #nearby-cards { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
-    #nearby-cards::-webkit-scrollbar { display: none; }
-    .campaign-card {
-      flex-shrink: 0; background: rgba(0,0,0,0.8); border-radius: 12px;
-      padding: 10px 14px; min-width: 160px; max-width: 200px;
-      border: 1px solid rgba(0,243,255,0.3);
-      backdrop-filter: blur(8px);
+    #cards-row { display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; }
+    #cards-row::-webkit-scrollbar { display:none; }
+    .ncard {
+      flex-shrink:0; min-width:150px; max-width:190px;
+      background:rgba(0,0,0,0.85); border-radius:12px;
+      padding:10px 12px; border:1px solid rgba(0,243,255,0.25);
     }
-    .campaign-card .card-name { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 3px; }
-    .campaign-card .card-dist { font-size: 11px; color: #00f3ff; margin-bottom: 2px; }
-    .campaign-card .card-type { font-size: 10px; color: #666; text-transform: uppercase; }
-    .campaign-card .card-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .ncard-name { font-size:12px; font-weight:700; color:#fff; margin-bottom:4px; }
+    .ncard-dist { font-size:11px; font-weight:600; margin-bottom:2px; }
+    .ncard-loc  { font-size:10px; color:#555; }
 
-    /* Permission / loading screens */
-    #screen-overlay {
-      position: fixed; inset: 0; z-index: 99999;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: #000; color: #fff; text-align: center; padding: 32px;
+    /* No-signal banner */
+    #no-signal {
+      position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+      z-index:8000; display:none;
+      background:rgba(0,0,0,0.8); border:1px solid #333;
+      border-radius:20px; padding:8px 16px;
+      font-size:11px; color:#555; white-space:nowrap;
     }
-    #screen-overlay.hidden { display: none; }
-    #screen-overlay .logo { font-size: 32px; font-weight: 900; color: #00f3ff; text-shadow: 0 0 20px #00f3ff; margin-bottom: 8px; }
-    #screen-overlay .tagline { font-size: 14px; color: #888; margin-bottom: 32px; }
-    #screen-overlay .btn {
-      background: #00f3ff; color: #000; font-weight: 700; font-size: 15px;
-      border: none; border-radius: 12px; padding: 14px 28px; cursor: pointer;
-      box-shadow: 0 0 20px rgba(0,243,255,0.4); margin: 6px;
-    }
-    #screen-overlay .btn-ghost {
-      background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.2);
-      font-size: 13px; padding: 10px 20px;
-    }
-    #screen-overlay .status-msg { font-size: 13px; color: #888; margin-top: 16px; min-height: 20px; }
-    #screen-overlay .spinner {
-      width: 40px; height: 40px; border: 3px solid rgba(0,243,255,0.2);
-      border-top-color: #00f3ff; border-radius: 50%;
-      animation: spin 0.8s linear infinite; margin: 0 auto 16px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Pulse ring for AR anchor indicator */
-    .pulse-ring {
-      position: fixed; width: 60px; height: 60px; border-radius: 50%;
-      border: 2px solid #00f3ff; opacity: 0;
-      animation: pulseRing 2s ease-out infinite;
-      pointer-events: none; z-index: 9998;
-      top: 50%; left: 50%; transform: translate(-50%, -50%);
-    }
-    @keyframes pulseRing {
-      0% { transform: translate(-50%,-50%) scale(0.5); opacity: 0.8; }
-      100% { transform: translate(-50%,-50%) scale(3); opacity: 0; }
-    }
-
-    a-scene { position: fixed; inset: 0; }
   </style>
 </head>
 <body>
 
-<!-- Startup Screen -->
-<div id="screen-overlay">
-  <div class="logo">COHUA</div>
-  <div class="tagline">Point your camera to see AR ads</div>
-  <div id="start-content">
-    <button class="btn" onclick="startAR()">&#128247; Start AR Experience</button>
-    <br>
-    <p class="status-msg" id="start-msg">Requires camera &amp; location access</p>
+<!-- STARTUP SCREEN -->
+<div id="startup">
+  <div class="s-logo">COHUA</div>
+  <div class="s-sub">Augmented Reality Ad Network</div>
+
+  <button class="s-btn" id="start-btn" onclick="startAR()">&#x1F4F7; &nbsp;Open AR Camera</button>
+  <p class="s-msg" id="start-msg">Camera &amp; location required</p>
+
+  <div class="s-steps">
+    <div class="s-step"><span>1</span> Allow camera access when prompted</div>
+    <div class="s-step"><span>2</span> Allow location access when prompted</div>
+    <div class="s-step"><span>3</span> Point at nearby businesses to see AR ads</div>
   </div>
 </div>
 
-<!-- Pulse ring visual -->
-<div class="pulse-ring" id="pulse-ring" style="display:none"></div>
-
-<!-- HUD -->
-<div id="hud">
+<!-- HUD (shown after AR starts) -->
+<div id="hud" style="display:none">
   <div id="hud-bar">
-    <div id="hud-logo">COHUA<span style="color:#fff">.</span></div>
-    <div id="hud-status">
-      <span id="status-gps" class="searching">&#x25CF; Locating...</span>
-      <span id="status-campaigns" class="searching">Scanning for ads...</span>
+    <div id="hud-logo">COHUA</div>
+    <div id="hud-right">
+      <span class="hud-line hud-yellow" id="hud-gps">&#x25CF; Locating GPS...</span>
+      <span class="hud-line hud-gray" id="hud-ads">Scanning for ads...</span>
     </div>
   </div>
 </div>
 
-<!-- Nearby Panel -->
-<div id="nearby-panel" style="display:none">
-  <div id="nearby-cards"></div>
+<!-- Cards strip -->
+<div id="cards-strip">
+  <div id="cards-row"></div>
 </div>
 
-<!-- A-Frame AR Scene -->
+<!-- No signal -->
+<div id="no-signal">No AR ads within 1,000 ft</div>
+
+<!-- A-FRAME SCENE (GPS mode) -->
+<!--
+  KEY: arjs uses 'sourceType: webcam' for camera passthrough.
+  Camera entity uses 'gps-camera' (NOT gps-projected-camera).
+  Entities use 'gps-entity-place' (NOT gps-projected-entity-place).
+  These are the STABLE AR.js 3.x GPS components.
+-->
 <a-scene
-  id="ar-scene"
-  vr-mode-ui="enabled: false"
+  id="main-scene"
+  vr-mode-ui="enabled:false"
+  arjs="sourceType:webcam; videoTexture:true; debugUIEnabled:false;"
+  renderer="antialias:true; alpha:true;"
   embedded
-  arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; trackingMethod: best;"
-  renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true;"
-  style="display:none">
+  style="display:none; position:fixed; inset:0;">
 
-  <a-camera gps-projected-camera rotation-reader></a-camera>
-
-  <!-- AR entities injected here by JS -->
-  <a-entity id="ar-entities"></a-entity>
+  <a-camera gps-camera rotation-reader></a-camera>
+  <a-entity id="ar-root"></a-entity>
 
 </a-scene>
 
 <script>
-const SUPABASE_URL = 'https://sgredejirqatcmstlzqi.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNncmVkZWppcnFhdGNtc3RsenFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDY3NTUsImV4cCI6MjA4ODU4Mjc1NX0.bV19P9HmMSDe4JGAmJHcmCIjN3kbZvHTuurmCRVD_sA';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL  = 'https://sgredejirqatcmstlzqi.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNncmVkZWppcnFhdGNtc3RsenFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDY3NTUsImV4cCI6MjA4ODU4Mjc1NX0.bV19P9HmMSDe4JGAmJHcmCIjN3kbZvHTuurmCRVD_sA';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 1 mile = 1609m, we use 1000ft = ~305m as the trigger radius
-const TRIGGER_RADIUS_M = 305; // 1000 feet
-const SCAN_INTERVAL_MS = 8000; // re-scan every 8 seconds
+const RADIUS_M   = 305;   // 1000 feet
+const SCAN_EVERY = 8000;  // ms
 
-let userLat = null, userLng = null;
-let activeCampaigns = [];
-let watchId = null;
-let scanInterval = null;
-let arStarted = false;
+let lat = null, lng = null;
+let gpsWatch = null;
+let scanTimer = null;
+let running = false;
 
-// ─── NEON COLOR HELPERS ────────────────────────────────────────────────────
-function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1,3),16)/255;
-  const g = parseInt(hex.slice(3,5),16)/255;
-  const b = parseInt(hex.slice(5,7),16)/255;
-  return `${r} ${g} ${b}`;
+// ── HAVERSINE ─────────────────────────────────────────────────────────────────
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371000, r=Math.PI/180;
+  const dLat=(lat2-lat1)*r, dLon=(lon2-lon1)*r;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*r)*Math.cos(lat2*r)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+const toFt = m => Math.round(m*3.28084);
+
+// ── NEON COLOR ────────────────────────────────────────────────────────────────
+function neonColor(c){
+  try { return JSON.parse(c.deploy_payload||'{}').neon_color||'#00f3ff'; }
+  catch{ return '#00f3ff'; }
 }
 
-function getNeonColor(campaign) {
-  try {
-    const p = JSON.parse(campaign.deploy_payload || '{}');
-    return p.neon_color || '#00f3ff';
-  } catch { return '#00f3ff'; }
-}
-
-// ─── DISTANCE CALCULATION ──────────────────────────────────────────────────
-function distanceMeters(lat1, lng1, lat2, lng2) {
-  const R = 6371000;
-  const dLat = (lat2-lat1) * Math.PI/180;
-  const dLng = (lng2-lng1) * Math.PI/180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-function metersToFeet(m) { return Math.round(m * 3.28084); }
-
-// ─── START AR ──────────────────────────────────────────────────────────────
-async function startAR() {
+// ── MAIN START ────────────────────────────────────────────────────────────────
+async function startAR(){
+  const btn = document.getElementById('start-btn');
   const msg = document.getElementById('start-msg');
-  const btn = document.querySelector('.btn');
   btn.disabled = true; btn.textContent = 'Starting...';
-  msg.textContent = 'Requesting permissions...';
+  msg.textContent = 'Requesting camera access...';
 
-  // Request camera
+  // 1. Camera permission
   try {
-    await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-  } catch(e) {
-    msg.textContent = 'Camera access denied. Please allow camera in browser settings.';
-    btn.disabled = false; btn.textContent = '\uD83D\uDCF7 Start AR Experience';
+    await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+  } catch(e){
+    msg.textContent = 'Camera denied. Allow camera access in browser settings and refresh.';
+    btn.disabled=false; btn.textContent='\uD83D\uDCF7 Open AR Camera';
     return;
   }
 
-  // Request GPS
-  if (!navigator.geolocation) {
-    msg.textContent = 'GPS not supported on this device.';
-    btn.disabled = false; return;
+  // 2. GPS permission
+  if(!navigator.geolocation){
+    msg.textContent='GPS not supported on this device.';
+    btn.disabled=false; return;
   }
-
-  msg.textContent = 'Getting your location...';
+  msg.textContent='Getting your location...';
 
   navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      userLat = pos.coords.latitude;
-      userLng = pos.coords.longitude;
-      msg.textContent = 'Location found! Loading AR...';
-      await launchARScene();
+    pos => { lat=pos.coords.latitude; lng=pos.coords.longitude; _launch(); },
+    ()  => {
+      msg.textContent='Location denied. Enable location and refresh.';
+      btn.disabled=false; btn.textContent='\uD83D\uDCF7 Open AR Camera';
     },
-    (err) => {
-      msg.textContent = 'Location access denied. Enable location to see nearby AR ads.';
-      btn.disabled = false; btn.textContent = '\uD83D\uDCF7 Start AR Experience';
-    },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    {enableHighAccuracy:true, timeout:15000, maximumAge:0}
   );
 }
 
-async function launchARScene() {
-  arStarted = true;
+function _launch(){
+  running = true;
+  document.getElementById('startup').classList.add('hidden');
+  document.getElementById('hud').style.display='block';
+  document.getElementById('main-scene').style.display='block';
 
-  // Hide startup screen
-  document.getElementById('screen-overlay').classList.add('hidden');
-
-  // Show A-Frame scene
-  const scene = document.getElementById('ar-scene');
-  scene.style.display = 'block';
-
-  // Show pulse ring
-  const ring = document.getElementById('pulse-ring');
-  ring.style.display = 'block';
-
-  // Start GPS tracking
-  watchId = navigator.geolocation.watchPosition(
-    (pos) => {
-      userLat = pos.coords.latitude;
-      userLng = pos.coords.longitude;
-      document.getElementById('status-gps').textContent = `\u25CF GPS (${userLat.toFixed(4)}, ${userLng.toFixed(4)})`;
-      document.getElementById('status-gps').className = 'active';
+  // Start GPS watch
+  gpsWatch = navigator.geolocation.watchPosition(
+    pos=>{
+      lat=pos.coords.latitude; lng=pos.coords.longitude;
+      const el=document.getElementById('hud-gps');
+      el.textContent=`\u25CF GPS \u00b1${Math.round(pos.coords.accuracy)}m`;
+      el.className='hud-line hud-green';
     },
-    (err) => {
-      document.getElementById('status-gps').textContent = '\u25CF GPS error';
-      document.getElementById('status-gps').className = 'error';
+    ()=>{
+      const el=document.getElementById('hud-gps');
+      el.textContent='\u25CF GPS lost';
+      el.className='hud-line hud-red';
     },
-    { enableHighAccuracy: true, timeout: 5000, maximumAge: 1000 }
+    {enableHighAccuracy:true, timeout:5000, maximumAge:2000}
   );
 
-  // Initial scan then repeat
-  await scanCampaigns();
-  scanInterval = setInterval(scanCampaigns, SCAN_INTERVAL_MS);
+  scan();
+  scanTimer = setInterval(scan, SCAN_EVERY);
 }
 
-// ─── SCAN FOR NEARBY CAMPAIGNS ─────────────────────────────────────────────
-async function scanCampaigns() {
-  if (!userLat || !userLng) return;
+// ── SCAN SUPABASE ─────────────────────────────────────────────────────────────
+async function scan(){
+  if(!lat||!lng) return;
+  document.getElementById('hud-ads').textContent='Scanning...';
 
-  document.getElementById('status-campaigns').textContent = 'Scanning...';
-  document.getElementById('status-campaigns').className = 'searching';
+  const {data,error} = await sb
+    .from('campaigns')
+    .select('id,name,asset_type,latitude,longitude,location_label,deploy_payload')
+    .eq('status','live')
+    .not('latitude','is',null);
 
-  try {
-    const { data, error } = await sb
-      .from('campaigns')
-      .select('id, name, asset_type, latitude, longitude, location_label, deploy_payload, notes')
-      .eq('status', 'live')
-      .not('latitude', 'is', null);
+  if(error){ console.error(error); return; }
 
-    if (error) throw error;
+  const nearby = (data||[])
+    .map(c=>({...c, _m: haversine(lat,lng,c.latitude,c.longitude)}))
+    .filter(c=>c._m<=RADIUS_M)
+    .sort((a,b)=>a._m-b._m);
 
-    // Filter to within trigger radius
-    const nearby = (data || []).filter(c => {
-      const d = distanceMeters(userLat, userLng, c.latitude, c.longitude);
-      c._distM = d;
-      c._distFt = metersToFeet(d);
-      return d <= TRIGGER_RADIUS_M;
-    }).sort((a,b) => a._distM - b._distM);
-
-    // Update HUD
-    if (nearby.length === 0) {
-      document.getElementById('status-campaigns').textContent = 'No AR ads nearby';
-      document.getElementById('status-campaigns').className = 'searching';
-    } else {
-      document.getElementById('status-campaigns').textContent = `${nearby.length} AR ad${nearby.length>1?'s':''} nearby`;
-      document.getElementById('status-campaigns').className = 'active';
-    }
-
-    // Update AR scene entities
-    updateAREntities(nearby);
-
-    // Update bottom cards
-    updateNearbyCards(nearby);
-
-    activeCampaigns = nearby;
-
-  } catch(e) {
-    console.error('Scan error:', e);
-    document.getElementById('status-campaigns').textContent = 'Scan error';
-    document.getElementById('status-campaigns').className = 'error';
+  const adsEl = document.getElementById('hud-ads');
+  if(nearby.length){
+    adsEl.textContent=`${nearby.length} AR ad${nearby.length>1?'s':''} nearby`;
+    adsEl.className='hud-line hud-green';
+    document.getElementById('no-signal').style.display='none';
+  } else {
+    adsEl.textContent='No AR ads within 1,000 ft';
+    adsEl.className='hud-line hud-gray';
+    document.getElementById('no-signal').style.display='block';
   }
+
+  renderAREntities(nearby);
+  renderCards(nearby);
 }
 
-// ─── AR ENTITIES ───────────────────────────────────────────────────────────
-function updateAREntities(campaigns) {
-  const container = document.getElementById('ar-entities');
-  container.innerHTML = ''; // clear old
+// ── RENDER A-FRAME ENTITIES ───────────────────────────────────────────────────
+function renderAREntities(campaigns){
+  const root = document.getElementById('ar-root');
+  root.innerHTML = '';
 
-  campaigns.forEach(c => {
-    const color = getNeonColor(c);
-    const name = c.name.replace('[DEMO] ', '').replace('[DEMO]', '').trim();
-    const shortName = name.length > 18 ? name.substring(0,18) + '...' : name;
+  campaigns.forEach(c=>{
+    const color = neonColor(c);
+    const name  = c.name.replace(/\[DEMO\]\s*/,'').trim();
+    const label = name.length>20 ? name.slice(0,20)+'\u2026' : name;
+    const ft    = toFt(c._m);
+    const typeStr = {
+      neon_logo:'NEON LOGO', neon_menu:'NEON MENU',
+      neon_image:'NEON IMAGE', custom_3d:'3D AD'
+    }[c.asset_type]||'AR AD';
 
-    // Outer glow entity (larger, faded)
-    const glow = document.createElement('a-entity');
-    glow.setAttribute('gps-projected-entity-place', `latitude: ${c.latitude}; longitude: ${c.longitude}`);
-    glow.setAttribute('look-at', '[gps-projected-camera]');
+    /*
+     * gps-entity-place = stable AR.js 3.x GPS anchor
+     * Each entity is placed at the real-world GPS coordinate.
+     * look-at="[gps-camera]" makes it always face the viewer.
+     * Position y lifts it off the ground (meters).
+     */
+    const wrapper = document.createElement('a-entity');
+    wrapper.setAttribute('gps-entity-place', `latitude:${c.latitude}; longitude:${c.longitude}`);
+    wrapper.setAttribute('look-at', '[gps-camera]');
 
-    // Neon text sign
-    const sign = document.createElement('a-entity');
-    sign.setAttribute('gps-projected-entity-place', `latitude: ${c.latitude}; longitude: ${c.longitude}`);
-    sign.setAttribute('look-at', '[gps-projected-camera]');
-
-    // Background panel
+    // ── Sign backing panel ──
     const panel = document.createElement('a-plane');
-    panel.setAttribute('width', '4');
-    panel.setAttribute('height', '1.4');
-    panel.setAttribute('color', '#000000');
-    panel.setAttribute('opacity', '0.7');
-    panel.setAttribute('position', '0 3 0');
+    panel.setAttribute('position','0 3 0');
+    panel.setAttribute('width','3.5');
+    panel.setAttribute('height','1.5');
+    panel.setAttribute('color','#050505');
+    panel.setAttribute('opacity','0.85');
+    panel.setAttribute('side','double');
 
-    // Neon border (top)
-    const borderTop = document.createElement('a-plane');
-    borderTop.setAttribute('width', '4');
-    borderTop.setAttribute('height', '0.04');
-    borderTop.setAttribute('color', color);
-    borderTop.setAttribute('emit', color);
-    borderTop.setAttribute('position', '0 3.68 0.01');
+    // ── Top neon bar ──
+    const topBar = document.createElement('a-plane');
+    topBar.setAttribute('position','0 3.73 0.01');
+    topBar.setAttribute('width','3.5');
+    topBar.setAttribute('height','0.06');
+    topBar.setAttribute('color', color);
+    topBar.setAttribute('emissive', color);
+    topBar.setAttribute('emissive-intensity','2');
 
-    // Neon text
-    const text = document.createElement('a-text');
-    text.setAttribute('value', shortName);
-    text.setAttribute('color', color);
-    text.setAttribute('align', 'center');
-    text.setAttribute('width', '5');
-    text.setAttribute('position', '0 3.1 0.01');
-    text.setAttribute('font', 'https://cdn.aframe.io/fonts/Roboto-msdf.json');
+    // ── Bottom neon bar ──
+    const botBar = document.createElement('a-plane');
+    botBar.setAttribute('position','0 2.27 0.01');
+    botBar.setAttribute('width','3.5');
+    botBar.setAttribute('height','0.06');
+    botBar.setAttribute('color', color);
+    botBar.setAttribute('emissive', color);
+    botBar.setAttribute('emissive-intensity','2');
 
-    // Subtitle text (type)
-    const subtext = document.createElement('a-text');
-    const typeLabel = {neon_logo:'NEON LOGO', neon_menu:'NEON MENU', neon_image:'NEON IMAGE', custom_3d:'3D AD', location:'LOCATION'}[c.asset_type] || 'AR AD';
-    subtext.setAttribute('value', `${typeLabel}  ·  ${c._distFt} FT`);
-    subtext.setAttribute('color', '#888888');
-    subtext.setAttribute('align', 'center');
-    subtext.setAttribute('width', '3');
-    subtext.setAttribute('position', '0 2.7 0.01');
+    // ── Business name ──
+    const nameText = document.createElement('a-text');
+    nameText.setAttribute('value', label);
+    nameText.setAttribute('color', color);
+    nameText.setAttribute('align','center');
+    nameText.setAttribute('width','4');
+    nameText.setAttribute('position','0 3.12 0.02');
+    nameText.setAttribute('z-offset','0.01');
 
-    // Neon border (bottom)
-    const borderBot = document.createElement('a-plane');
-    borderBot.setAttribute('width', '4');
-    borderBot.setAttribute('height', '0.04');
-    borderBot.setAttribute('color', color);
-    borderBot.setAttribute('position', '0 2.32 0.01');
+    // ── Sub-label (type + distance) ──
+    const subText = document.createElement('a-text');
+    subText.setAttribute('value', `${typeStr}   \u00b7   ${ft} FT AWAY`);
+    subText.setAttribute('color','#666666');
+    subText.setAttribute('align','center');
+    subText.setAttribute('width','2.5');
+    subText.setAttribute('position','0 2.72 0.02');
 
-    // Vertical pole
+    // ── Vertical pole ──
     const pole = document.createElement('a-cylinder');
-    pole.setAttribute('radius', '0.02');
-    pole.setAttribute('height', '2.5');
+    pole.setAttribute('position','0 1.5 0');
+    pole.setAttribute('radius','0.025');
+    pole.setAttribute('height','3');
     pole.setAttribute('color', color);
-    pole.setAttribute('opacity', '0.6');
-    pole.setAttribute('position', '0 1.8 0');
+    pole.setAttribute('opacity','0.5');
+    pole.setAttribute('emissive', color);
+    pole.setAttribute('emissive-intensity','1');
 
-    // Ground dot
-    const dot = document.createElement('a-cylinder');
-    dot.setAttribute('radius', '0.3');
-    dot.setAttribute('height', '0.05');
-    dot.setAttribute('color', color);
-    dot.setAttribute('opacity', '0.4');
-    dot.setAttribute('position', '0 0.025 0');
+    // ── Ground circle ──
+    const ground = document.createElement('a-circle');
+    ground.setAttribute('position','0 0.01 0');
+    ground.setAttribute('radius','0.5');
+    ground.setAttribute('color', color);
+    ground.setAttribute('opacity','0.25');
+    ground.setAttribute('rotation','-90 0 0');
 
-    // Pulsing ring at ground
+    // ── Pulsing ring ──
     const ring = document.createElement('a-ring');
-    ring.setAttribute('radius-inner', '0.3');
-    ring.setAttribute('radius-outer', '0.5');
+    ring.setAttribute('position','0 0.02 0');
+    ring.setAttribute('radius-inner','0.5');
+    ring.setAttribute('radius-outer','0.7');
     ring.setAttribute('color', color);
-    ring.setAttribute('opacity', '0.3');
-    ring.setAttribute('rotation', '-90 0 0');
-    ring.setAttribute('position', '0 0.05 0');
-    ring.setAttribute('animation', 'property: scale; to: 2 2 2; dur: 2000; loop: true; easing: easeOutQuad; dir: alternate');
+    ring.setAttribute('opacity','0.4');
+    ring.setAttribute('rotation','-90 0 0');
+    ring.setAttribute('animation',
+      'property:scale; from:1 1 1; to:2.5 2.5 2.5; dur:2000; easing:easeOutCubic; loop:true; dir:alternate');
 
-    sign.appendChild(panel);
-    sign.appendChild(borderTop);
-    sign.appendChild(text);
-    sign.appendChild(subtext);
-    sign.appendChild(borderBot);
-    sign.appendChild(pole);
-    sign.appendChild(dot);
-    sign.appendChild(ring);
+    wrapper.appendChild(panel);
+    wrapper.appendChild(topBar);
+    wrapper.appendChild(botBar);
+    wrapper.appendChild(nameText);
+    wrapper.appendChild(subText);
+    wrapper.appendChild(pole);
+    wrapper.appendChild(ground);
+    wrapper.appendChild(ring);
 
-    container.appendChild(sign);
+    root.appendChild(wrapper);
   });
 }
 
-// ─── BOTTOM CARDS ──────────────────────────────────────────────────────────
-function updateNearbyCards(campaigns) {
-  const panel = document.getElementById('nearby-panel');
-  const cards = document.getElementById('nearby-cards');
-
-  if (!campaigns.length) {
-    panel.style.display = 'none';
-    return;
-  }
-
-  panel.style.display = 'block';
-  cards.innerHTML = campaigns.map(c => {
-    const color = getNeonColor(c);
-    const name = c.name.replace('[DEMO] ', '').replace('[DEMO]', '').trim();
-    const label = c.location_label || `${c.latitude.toFixed(4)}, ${c.longitude.toFixed(4)}`;
-    return `
-    <div class="campaign-card" style="border-color: ${color}40">
-      <div class="card-name">${escHtml(name)}</div>
-      <div class="card-dist" style="color:${color}">&#x25C6; ${c._distFt} ft away</div>
-      <div class="card-type">${escHtml(label)}</div>
+// ── BOTTOM CARDS ──────────────────────────────────────────────────────────────
+function renderCards(campaigns){
+  const strip = document.getElementById('cards-strip');
+  const row   = document.getElementById('cards-row');
+  if(!campaigns.length){ strip.style.display='none'; return; }
+  strip.style.display='block';
+  row.innerHTML = campaigns.map(c=>{
+    const color = neonColor(c);
+    const name  = c.name.replace(/\[DEMO\]\s*/,'').trim();
+    const loc   = c.location_label||`${c.latitude.toFixed(4)},${c.longitude.toFixed(4)}`;
+    return `<div class="ncard" style="border-color:${color}50">
+      <div class="ncard-name">${esc(name)}</div>
+      <div class="ncard-dist" style="color:${color}">&#x25C6; ${toFt(c._m)} ft</div>
+      <div class="ncard-loc">${esc(loc)}</div>
     </div>`;
   }).join('');
 }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// Handle page visibility (pause/resume GPS on tab switch)
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden && scanInterval) {
-    clearInterval(scanInterval); scanInterval = null;
-  } else if (!document.hidden && arStarted) {
-    if (!scanInterval) scanInterval = setInterval(scanCampaigns, SCAN_INTERVAL_MS);
-    scanCampaigns();
-  }
+// Pause/resume on tab switch
+document.addEventListener('visibilitychange',()=>{
+  if(!running) return;
+  if(document.hidden){ clearInterval(scanTimer); scanTimer=null; }
+  else { scan(); if(!scanTimer) scanTimer=setInterval(scan,SCAN_EVERY); }
 });
 </script>
 </body>
