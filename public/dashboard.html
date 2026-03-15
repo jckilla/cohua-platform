@@ -39,11 +39,13 @@
     .btn-danger:hover { background: rgba(255,68,102,0.25); }
     .stat-card { background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%); border: 1px solid rgba(255,255,255,0.07); transition: all 0.3s; }
     .stat-card:hover { border-color: rgba(0,243,255,0.25); box-shadow: 0 0 20px rgba(0,243,255,0.06); }
-    .badge-active { background: rgba(0,255,102,0.15); color: #00ff66; border: 1px solid rgba(0,255,102,0.3); }
-    .badge-pending { background: rgba(255,215,0,0.15); color: #ffd700; border: 1px solid rgba(255,215,0,0.3); }
+    .badge-live { background: rgba(0,255,102,0.15); color: #00ff66; border: 1px solid rgba(0,255,102,0.3); }
     .badge-draft { background: rgba(255,255,255,0.06); color: #888; border: 1px solid rgba(255,255,255,0.12); }
+    .badge-paused { background: rgba(255,215,0,0.15); color: #ffd700; border: 1px solid rgba(255,215,0,0.3); }
+    .badge-ended { background: rgba(255,68,102,0.12); color: #ff4466; border: 1px solid rgba(255,68,102,0.3); }
     .badge-admin { background: rgba(255,0,255,0.12); color: #ff00ff; border: 1px solid rgba(255,0,255,0.3); }
     .badge-client { background: rgba(0,243,255,0.12); color: #00f3ff; border: 1px solid rgba(0,243,255,0.3); }
+    .badge-pending { background: rgba(255,215,0,0.15); color: #ffd700; border: 1px solid rgba(255,215,0,0.3); }
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
     .modal-overlay.open { opacity: 1; pointer-events: all; }
     .modal-box { background: #0d1117; border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; transform: translateY(20px); transition: transform 0.2s; }
@@ -107,7 +109,7 @@
       <div><label class="form-label">Campaign Name *</label><input type="text" id="camp-name" class="form-input" placeholder="e.g. Nike Soho Neon Logo"></div>
       <div class="grid grid-cols-2 gap-4">
         <div><label class="form-label">Asset Type *</label><select id="camp-type" class="form-input"><option value="">Select type…</option><option value="neon_logo">Neon Logo</option><option value="neon_menu">Neon Menu</option><option value="neon_image">Neon Image</option><option value="custom_3d">Custom 3D</option></select></div>
-        <div><label class="form-label">Status</label><select id="camp-status" class="form-input"><option value="draft">Draft</option><option value="active">Active</option><option value="pending">Pending Review</option></select></div>
+        <div><label class="form-label">Status</label><select id="camp-status" class="form-input"><option value="draft">Draft</option><option value="live">Live</option><option value="paused">Paused</option><option value="ended">Ended</option></select></div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div><label class="form-label">Latitude</label><input type="number" id="camp-lat" class="form-input" placeholder="40.7580" step="0.0001"></div>
@@ -251,7 +253,7 @@
     <div class="section active" id="section-overview">
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <div class="stat-card rounded-xl p-5">
-          <div class="flex items-center justify-between mb-4"><span class="text-gray-500 text-xs font-medium uppercase tracking-wider">Active Campaigns</span><div class="w-9 h-9 rounded-lg bg-neon-blue/10 flex items-center justify-center"><svg class="w-4 h-4 text-neon-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div></div>
+          <div class="flex items-center justify-between mb-4"><span class="text-gray-500 text-xs font-medium uppercase tracking-wider">Live Campaigns</span><div class="w-9 h-9 rounded-lg bg-neon-blue/10 flex items-center justify-center"><svg class="w-4 h-4 text-neon-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div></div>
           <p class="text-3xl font-bold" id="stat-campaigns">—</p><p class="text-xs text-gray-600 mt-1">AR experiences deployed</p>
         </div>
         <div class="stat-card rounded-xl p-5">
@@ -319,9 +321,10 @@
       <div class="flex items-center justify-between mb-6">
         <div class="flex gap-2">
           <button onclick="filterCampaigns('all')" class="view-tab active" id="filter-all">All</button>
-          <button onclick="filterCampaigns('active')" class="view-tab" id="filter-active">Active</button>
+          <button onclick="filterCampaigns('live')" class="view-tab" id="filter-live">Live</button>
           <button onclick="filterCampaigns('draft')" class="view-tab" id="filter-draft">Draft</button>
-          <button onclick="filterCampaigns('pending')" class="view-tab" id="filter-pending">Pending</button>
+          <button onclick="filterCampaigns('paused')" class="view-tab" id="filter-paused">Paused</button>
+          <button onclick="filterCampaigns('ended')" class="view-tab" id="filter-ended">Ended</button>
         </div>
         <button onclick="openModal('modal-campaign')" class="btn-primary px-4 py-2 rounded-lg text-sm flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>New Campaign</button>
       </div>
@@ -437,10 +440,10 @@
         <div class="glass rounded-xl p-6">
           <h3 class="font-semibold mb-4">Integrations</h3>
           <div class="space-y-3">
-            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-800/40"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-green-500/15 flex items-center justify-center"><svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21.35 11.1L12.18 1.92A.9.9 0 0011.53 1.7a.9.9 0 00-.65.27L1.7 10.45a.9.9 0 000 1.28l9.18 9.17a.9.9 0 001.28 0l9.17-9.17a.9.9 0 000-1.28l.02-.35z"/></svg></div><div><p class="text-sm font-medium">Supabase</p><p class="text-xs text-gray-500">sgredejirqatcmstlzqi</p></div></div><span class="text-xs badge-active px-2.5 py-1 rounded-full">Connected</span></div>
-            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-800/40"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center"><svg class="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/></svg></div><div><p class="text-sm font-medium">Stripe</p><p class="text-xs text-gray-500">Sandbox mode active</p></div></div><span class="text-xs badge-active px-2.5 py-1 rounded-full">Connected</span></div>
-            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-800/40"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center"><svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg></div><div><p class="text-sm font-medium">Vercel</p><p class="text-xs text-gray-500">cohua-platform.vercel.app</p></div></div><span class="text-xs badge-active px-2.5 py-1 rounded-full">Live</span></div>
-            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-800/40"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-gray-500/15 flex items-center justify-center"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg></div><div><p class="text-sm font-medium">Custom Domain</p><p class="text-xs text-gray-500">cohua.global</p></div></div><span class="text-xs badge-pending px-2.5 py-1 rounded-full">Pending</span></div>
+            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-800/40"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-green-500/15 flex items-center justify-center"><svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 24 24"><path d="M21.35 11.1L12.18 1.92A.9.9 0 0011.53 1.7a.9.9 0 00-.65.27L1.7 10.45a.9.9 0 000 1.28l9.18 9.17a.9.9 0 001.28 0l9.17-9.17a.9.9 0 000-1.28l.02-.35z"/></svg></div><div><p class="text-sm font-medium">Supabase</p><p class="text-xs text-gray-500">sgredejirqatcmstlzqi</p></div></div><span class="text-xs badge-live px-2.5 py-1 rounded-full">Connected</span></div>
+            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-800/40"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-purple-500/15 flex items-center justify-center"><svg class="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/></svg></div><div><p class="text-sm font-medium">Stripe</p><p class="text-xs text-gray-500">Sandbox mode active</p></div></div><span class="text-xs badge-live px-2.5 py-1 rounded-full">Connected</span></div>
+            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-800/40"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center"><svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg></div><div><p class="text-sm font-medium">Vercel</p><p class="text-xs text-gray-500">cohua-platform.vercel.app</p></div></div><span class="text-xs badge-live px-2.5 py-1 rounded-full">Live</span></div>
+            <div class="flex items-center justify-between p-3 rounded-lg bg-gray-800/40"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-gray-500/15 flex items-center justify-center"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg></div><div><p class="text-sm font-medium">Custom Domain</p><p class="text-xs text-gray-500">cohua.global</p></div></div><span class="text-xs badge-paused px-2.5 py-1 rounded-full">Pending DNS</span></div>
           </div>
         </div>
         <div class="glass rounded-xl p-6" style="border-color: rgba(255,68,102,0.2)">
@@ -544,7 +547,7 @@
     if (!supabaseClient) return;
     try {
       const [c1, c2, c3] = await Promise.all([
-        supabaseClient.from('campaigns').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+        supabaseClient.from('campaigns').select('*', { count: 'exact', head: true }).eq('status', 'live'),
         supabaseClient.from('clients').select('*', { count: 'exact', head: true }),
         supabaseClient.from('campaigns').select('*', { count: 'exact', head: true }).not('latitude', 'is', null)
       ]);
@@ -706,7 +709,7 @@
     const btn = document.getElementById('btn-create-location');
     btn.textContent='Saving…'; btn.disabled=true;
     try {
-      const { error } = await supabaseClient.from('campaigns').insert({ name, location_label:address||name, latitude:parseFloat(lat), longitude:parseFloat(lng), asset_type:'location', status:'active', notes:radius?`Radius: ${radius}m`:null });
+      const { error } = await supabaseClient.from('campaigns').insert({ name, location_label:address||name, latitude:parseFloat(lat), longitude:parseFloat(lng), asset_type:'location', status:'live', notes:radius?`Radius: ${radius}m`:null });
       if (error) throw error;
       closeModal('modal-location');
       ['loc-name','loc-lat','loc-lng','loc-address','loc-radius'].forEach(id => document.getElementById(id).value='');
