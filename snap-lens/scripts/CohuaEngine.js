@@ -280,9 +280,13 @@ var Renderer = {
       var c = campaigns[i];
       seen[c.id] = true;
 
-      // Parse deploy_payload
+      // Parse deploy_payload — may be a pre-parsed object (Supabase JSONB)
       var payload = {};
-      try { payload = JSON.parse(c.deploy_payload || '{}'); } catch (e) { /* noop */ }
+      try {
+        payload = (typeof c.deploy_payload === 'string')
+          ? JSON.parse(c.deploy_payload)
+          : (c.deploy_payload || {});
+      } catch (e) { /* noop */ }
 
       var neonHex = payload.neon_color || Config.DEFAULT_NEON;
       var altM    = parseFloat(c.altitude_m)  || Config.DEFAULT_ALT_M;
