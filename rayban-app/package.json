@@ -16,6 +16,7 @@
     "@react-native-community/push-notification-ios": "^1.11.0",
     "react-native-permissions": "^4.1.5",
     "react-native-maps": "^1.10.0",
+    "react-native-tts": "^4.1.0",
     "@supabase/supabase-js": "^2.39.0",
     "react-native-url-polyfill": "^2.0.0"
   },

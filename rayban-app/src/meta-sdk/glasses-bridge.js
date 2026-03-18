@@ -212,7 +212,7 @@ class MetaGlassesBridge {
     // Disconnect native bridge
     if (this._nativeBridge && !this._useMockDevice) {
       try {
-        await this._nativeBridge.disconnect();
+        await this._nativeBridge.disconnectGlasses();
       } catch (error) {
         console.warn('[COHUA-GLASSES] Native disconnect error:', error.message);
       }
@@ -497,7 +497,7 @@ class MetaGlassesBridge {
         // Listen for frames from native module
         if (this._nativeEvents && options.onFrame) {
           this._cameraFrameSubscription = this._nativeEvents.addListener(
-            'MetaWearablesCameraFrame',
+            'onCameraFrame',
             options.onFrame
           );
         }

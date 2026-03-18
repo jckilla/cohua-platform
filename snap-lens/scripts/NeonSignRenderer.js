@@ -34,7 +34,11 @@ NeonSignRenderer.prototype.updateSigns = function(campaigns, userPos) {
 
     // Parse placement from deploy_payload
     var payload = {};
-    try { payload = JSON.parse(c.deploy_payload || '{}'); } catch(e) {}
+    try {
+      payload = (typeof c.deploy_payload === 'string')
+        ? JSON.parse(c.deploy_payload)
+        : (c.deploy_payload || {});
+    } catch(e) {}
 
     var neonHex    = payload.neon_color   || '#ff00ff';
     var altitudeM  = parseFloat(c.altitude_m)   || 7.0;  // height above ground
