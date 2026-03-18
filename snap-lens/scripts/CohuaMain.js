@@ -181,9 +181,13 @@ function updateSigns() {
   campaigns.forEach(function(c) {
     seen[c.id] = true;
 
-    // Parse placement
+    // Parse placement — deploy_payload may be a pre-parsed object (Supabase JSONB)
     var payload = {};
-    try { payload = JSON.parse(c.deploy_payload || '{}'); } catch(e) {}
+    try {
+      payload = (typeof c.deploy_payload === 'string')
+        ? JSON.parse(c.deploy_payload)
+        : (c.deploy_payload || {});
+    } catch(e) {}
 
     var neonHex   = payload.neon_color  || '#ff00ff';
     var altM      = parseFloat(c.altitude_m)  || 7.0;
