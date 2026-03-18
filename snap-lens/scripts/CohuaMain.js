@@ -1,3 +1,4 @@
+// NOTE: Use CohuaEngine.js for new deployments. This file is kept for backward compatibility.
 /**
  * CohuaMain.js  —  COHUA AR Snap Lens  (Lens Studio 5.7+, Spectacles)
  *
@@ -297,7 +298,8 @@ function _bar(parent, rgb, scl, yOffset) {
 // ── Billboard signs to camera ─────────────────────────────────────────────────
 function billboardSigns(camTransform) {
   var camPos = camTransform.getWorldPosition();
-  Object.values(signs).forEach(function(sign) {
+  // Use Object.keys().map() instead of Object.values() for Lens Studio compatibility
+  Object.keys(signs).map(function(k) { return signs[k]; }).forEach(function(sign) {
     var sp = sign.root.getTransform().getWorldPosition();
     var dir = new vec3(camPos.x - sp.x, 0, camPos.z - sp.z);
     if (dir.length > 0.1) {

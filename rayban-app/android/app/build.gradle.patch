@@ -1,0 +1,45 @@
+# Meta Wearables SDK — Gradle Dependencies
+#
+# Add the following to rayban-app/android/app/build.gradle inside the
+# dependencies { } block.
+#
+# The Meta SDK Maven repository must also be added to settings.gradle or
+# the project-level build.gradle:
+#
+#   // settings.gradle (or project build.gradle)
+#   dependencyResolutionManagement {
+#       repositories {
+#           // ... existing repos ...
+#           maven { url 'https://github.com/nicklockwood/meta-wearables-dat-android/raw/main/repo' }
+#       }
+#   }
+#
+# --- build.gradle dependencies ---
+
+dependencies {
+    // Meta Wearables Device Access Toolkit
+    implementation 'com.meta.wearable:mwdat-core:1.+'
+    implementation 'com.meta.wearable:mwdat-camera:1.+'
+
+    // MockDevice — debug builds only (simulate glasses without hardware)
+    debugImplementation 'com.meta.wearable:mwdat-mockdevice:1.+'
+
+    // Kotlin coroutines (required for Meta SDK Flows)
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+}
+
+# --- AndroidManifest.xml permissions ---
+#
+# Add to android/app/src/main/AndroidManifest.xml:
+#
+#   <uses-permission android:name="android.permission.BLUETOOTH" />
+#   <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+#   <uses-permission android:name="android.permission.INTERNET" />
+#   <uses-permission android:name="android.permission.CAMERA" />
+#
+# --- MainApplication.kt ---
+#
+# Register the package in getPackages():
+#
+#   packages.add(com.cohua.rayban.MetaWearablesPackage())
