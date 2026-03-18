@@ -35,6 +35,20 @@
         .hero-video-container { position: relative; border-radius: 16px; overflow: hidden; box-shadow: 0 0 60px rgba(0, 243, 255, 0.15), 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
         .hero-video-container video { width: 100%; height: 100%; object-fit: cover; display: block; }
         .hero-video-container::after { content: ''; position: absolute; inset: 0; border-radius: 16px; border: 1px solid rgba(0, 243, 255, 0.2); pointer-events: none; }
+
+        /* Step number circles */
+        .step-number {
+            width: 64px; height: 64px;
+            border: 2px solid #00f3ff;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: 700; color: #00f3ff;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+            flex-shrink: 0;
+        }
+
+        /* Star rating color */
+        .star-rating { color: #ffd700; letter-spacing: 2px; }
     </style>
 </head>
 <body class="bg-gray-950 text-gray-100 antialiased overflow-x-hidden">
@@ -43,6 +57,9 @@
     <nav class="fixed w-full z-50 glass-card px-6 py-4 flex justify-between items-center">
         <div class="text-2xl font-bold tracking-widest text-white">COHUA<span class="text-neon-blue">.</span></div>
         <div class="space-x-6 flex items-center">
+            <a href="#about" class="hover:text-neon-blue transition hidden md:inline">About</a>
+            <a href="#industries" class="hover:text-neon-blue transition hidden md:inline">Industries</a>
+            <a href="#contact" class="hover:text-neon-blue transition hidden md:inline">Contact</a>
             <a href="#" class="hover:text-neon-blue transition">Neon Store</a>
             <a href="/login" class="hover:text-neon-blue transition">Login</a>
             <a href="#claim" class="px-5 py-2 rounded-full border border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-gray-900 transition font-semibold neon-border">Get Started</a>
@@ -92,8 +109,43 @@
         </div>
     </section>
 
-    <!-- USE CASES -->
-    <section class="py-24 px-6 relative">
+    <!-- ============================================================ -->
+    <!-- ABOUT US -->
+    <!-- ============================================================ -->
+    <section id="about" class="py-24 px-6 relative border-t border-white/5">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6">About <span class="text-neon-blue neon-text-blue">COHUA</span></h2>
+                <p class="text-gray-400 text-lg max-w-3xl mx-auto leading-relaxed mb-4">
+                    COHUA is a spatial advertising company pioneering AR-anchored advertising for Snap Spectacles and the next generation of augmented reality wearables. Our team builds GPS-anchored neon displays that float in the real world, visible through AR glasses to anyone walking by.
+                </p>
+                <p class="text-gray-400 text-lg max-w-3xl mx-auto leading-relaxed">
+                    Our mission is to bridge physical and digital advertising, giving local businesses a futuristic edge. We believe every storefront, restaurant, and job site deserves to glow in the spatial layer.
+                </p>
+            </div>
+
+            <!-- Stat Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-card rounded-2xl p-8 text-center border border-white/10 hover:border-neon-blue/50 transition duration-300">
+                    <div class="text-5xl font-bold text-neon-blue neon-text-blue mb-2">914m</div>
+                    <p class="text-gray-400 text-lg">Detection Radius</p>
+                </div>
+                <div class="glass-card rounded-2xl p-8 text-center border border-white/10 hover:border-neon-magenta/50 transition duration-300">
+                    <div class="text-5xl font-bold text-neon-magenta mb-2" style="text-shadow: 0 0 10px rgba(255,0,255,0.7), 0 0 20px rgba(255,0,255,0.5);">&lt; 5s</div>
+                    <p class="text-gray-400 text-lg">Real-Time Updates</p>
+                </div>
+                <div class="glass-card rounded-2xl p-8 text-center border border-white/10 hover:border-neon-green/50 transition duration-300">
+                    <div class="text-5xl font-bold text-neon-green mb-2" style="text-shadow: 0 0 10px rgba(0,255,102,0.7), 0 0 20px rgba(0,255,102,0.5);">GPS</div>
+                    <p class="text-gray-400 text-lg">Precision Placement</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- USE CASES / INDUSTRIES -->
+    <!-- ============================================================ -->
+    <section id="industries" class="py-24 px-6 relative">
         <div class="max-w-7xl mx-auto">
             <div class="text-center mb-16">
                 <h2 class="text-4xl font-bold mb-4">Who We Serve</h2>
@@ -115,7 +167,14 @@
                             <span class="text-neon-blue">&#x1F3EA;</span> Regular Businesses
                         </h3>
                         <p class="text-neon-blue text-sm mb-4 tracking-wide font-semibold">"Stand Out on the Street."</p>
-                        <p class="text-gray-400 leading-relaxed">Turn everyday storefronts into interactive landmarks. Broadcast glowing 3D logos and promotions that grab attention from blocks away, instantly increasing walk-in customers.</p>
+                        <p class="text-gray-400 leading-relaxed mb-4">Turn everyday storefronts into interactive landmarks. Broadcast glowing 3D logos and promotions that grab attention from blocks away, instantly increasing walk-in customers.</p>
+                        <ul class="text-gray-400 space-y-2 mb-6">
+                            <li class="flex items-start gap-2"><span class="text-neon-blue mt-1">&#x25B8;</span> 3D floating storefront signage</li>
+                            <li class="flex items-start gap-2"><span class="text-neon-blue mt-1">&#x25B8;</span> Broadcast promotions visible from blocks away</li>
+                            <li class="flex items-start gap-2"><span class="text-neon-blue mt-1">&#x25B8;</span> Drive walk-in traffic with spatial waypoints</li>
+                            <li class="flex items-start gap-2"><span class="text-neon-blue mt-1">&#x25B8;</span> Real-time campaign analytics dashboard</li>
+                        </ul>
+                        <a href="#contact" class="inline-block px-6 py-2 rounded-full border border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-gray-900 transition font-semibold text-sm">Learn More</a>
                     </div>
                 </div>
                 <!-- Restaurants -->
@@ -134,7 +193,14 @@
                             <span class="text-neon-magenta">&#x1F37D;&#xFE0F;</span> Restaurants & Cafes
                         </h3>
                         <p class="text-neon-magenta text-sm mb-4 tracking-wide font-semibold">"Floating Menus of the Day."</p>
-                        <p class="text-gray-400 leading-relaxed">Capture hungry foot traffic by projecting your daily specials and interactive neon menus right outside your doorâvisible and exclusive to users wearing AR glasses as they walk by.</p>
+                        <p class="text-gray-400 leading-relaxed mb-4">Capture hungry foot traffic by projecting your daily specials and interactive neon menus right outside your door &mdash; visible and exclusive to users wearing AR glasses as they walk by.</p>
+                        <ul class="text-gray-400 space-y-2 mb-6">
+                            <li class="flex items-start gap-2"><span class="text-neon-magenta mt-1">&#x25B8;</span> Floating daily specials and happy hour menus</li>
+                            <li class="flex items-start gap-2"><span class="text-neon-magenta mt-1">&#x25B8;</span> Interactive neon menu boards at your doorstep</li>
+                            <li class="flex items-start gap-2"><span class="text-neon-magenta mt-1">&#x25B8;</span> QR-less engagement &mdash; customers see it through their glasses</li>
+                            <li class="flex items-start gap-2"><span class="text-neon-magenta mt-1">&#x25B8;</span> Track impressions and foot traffic conversions</li>
+                        </ul>
+                        <a href="#contact" class="inline-block px-6 py-2 rounded-full border border-neon-magenta text-neon-magenta hover:bg-neon-magenta hover:text-gray-900 transition font-semibold text-sm">Learn More</a>
                     </div>
                 </div>
                 <!-- Construction -->
@@ -153,7 +219,14 @@
                             <span class="text-neon-green">&#x1F3D7;&#xFE0F;</span> Construction Sites
                         </h3>
                         <p class="text-neon-green text-sm mb-4 tracking-wide font-semibold">"Own the Skyline."</p>
-                        <p class="text-gray-400 leading-relaxed">Don't let your project go unnoticed behind a fence. Project massive, glowing neon company logos and future building renders towering over active construction sites for ultimate brand visibility.</p>
+                        <p class="text-gray-400 leading-relaxed mb-4">Don't let your project go unnoticed behind a fence. Project massive, glowing neon company logos and future building renders towering over active construction sites for ultimate brand visibility.</p>
+                        <ul class="text-gray-400 space-y-2 mb-6">
+                            <li class="flex items-start gap-2"><span class="text-neon-green mt-1">&#x25B8;</span> Towering company logos over active job sites</li>
+                            <li class="flex items-start gap-2"><span class="text-neon-green mt-1">&#x25B8;</span> Future building renders floating above the fence line</li>
+                            <li class="flex items-start gap-2"><span class="text-neon-green mt-1">&#x25B8;</span> Safety zone markers and branded perimeters</li>
+                            <li class="flex items-start gap-2"><span class="text-neon-green mt-1">&#x25B8;</span> Impress investors and stakeholders with AR walk-throughs</li>
+                        </ul>
+                        <a href="#contact" class="inline-block px-6 py-2 rounded-full border border-neon-green text-neon-green hover:bg-neon-green hover:text-gray-900 transition font-semibold text-sm">Learn More</a>
                     </div>
                 </div>
                 <!-- Real Estate -->
@@ -174,7 +247,102 @@
                             <span class="text-neon-yellow">&#x1F3E1;</span> Real Estate
                         </h3>
                         <p class="text-neon-yellow text-sm mb-4 tracking-wide font-semibold">"The Future of Property Showings."</p>
-                        <p class="text-gray-400 leading-relaxed">Guide potential buyers directly to your open house with floating neon directional arrows. Display glowing property stats, pricing, and agent contact info hovering perfectly over the front lawn.</p>
+                        <p class="text-gray-400 leading-relaxed mb-4">Guide potential buyers directly to your open house with floating neon directional arrows. Display glowing property stats, pricing, and agent contact info hovering perfectly over the front lawn.</p>
+                        <ul class="text-gray-400 space-y-2 mb-6">
+                            <li class="flex items-start gap-2"><span class="text-neon-yellow mt-1">&#x25B8;</span> Floating OPEN HOUSE signs visible from the street</li>
+                            <li class="flex items-start gap-2"><span class="text-neon-yellow mt-1">&#x25B8;</span> Property stats, pricing, and virtual tours hovering over the lawn</li>
+                            <li class="flex items-start gap-2"><span class="text-neon-yellow mt-1">&#x25B8;</span> Directional AR arrows guiding buyers to your listing</li>
+                            <li class="flex items-start gap-2"><span class="text-neon-yellow mt-1">&#x25B8;</span> Agent contact info and scheduling right in the AR layer</li>
+                        </ul>
+                        <a href="#contact" class="inline-block px-6 py-2 rounded-full border border-neon-yellow text-neon-yellow hover:bg-neon-yellow hover:text-gray-900 transition font-semibold text-sm">Learn More</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- HOW IT WORKS -->
+    <!-- ============================================================ -->
+    <section class="py-24 px-6 relative border-t border-white/5 bg-gray-900/30">
+        <div class="max-w-5xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4">How It <span class="text-neon-blue neon-text-blue">Works</span></h2>
+                <p class="text-gray-400 text-lg">Three simple steps to light up your location.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="glass-card rounded-2xl p-8 text-center border border-white/10 hover:border-neon-blue/50 transition duration-300">
+                    <div class="flex justify-center mb-6">
+                        <div class="step-number">1</div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Choose Your Plan</h3>
+                    <p class="text-gray-400 leading-relaxed">Pick monthly or annual pricing and tell us your business location. We handle the rest.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="glass-card rounded-2xl p-8 text-center border border-white/10 hover:border-neon-blue/50 transition duration-300">
+                    <div class="flex justify-center mb-6">
+                        <div class="step-number">2</div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">We Build Your Sign</h3>
+                    <p class="text-gray-400 leading-relaxed">Our team designs your custom AR neon display &mdash; logos, menus, promos, or directional markers.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="glass-card rounded-2xl p-8 text-center border border-white/10 hover:border-neon-blue/50 transition duration-300">
+                    <div class="flex justify-center mb-6">
+                        <div class="step-number">3</div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Go Live</h3>
+                    <p class="text-gray-400 leading-relaxed">Your sign appears at your GPS coordinates, visible to all AR glasses users nearby. Update anytime from your dashboard.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- TESTIMONIALS / SOCIAL PROOF -->
+    <!-- ============================================================ -->
+    <section class="py-24 px-6 relative border-t border-white/5">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4">What Our Clients <span class="text-neon-magenta" style="text-shadow: 0 0 10px rgba(255,0,255,0.7);">Say</span></h2>
+                <p class="text-gray-400 text-lg">Businesses lighting up with COHUA.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Testimonial 1 -->
+                <div class="glass-card rounded-2xl p-8 border border-white/10 hover:border-neon-magenta/40 transition duration-300">
+                    <div class="star-rating text-lg mb-4">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                    <p class="text-gray-300 leading-relaxed mb-6 italic">"Since we started using COHUA, our lunch rush has doubled. People literally follow the floating menu to our front door. It's like having a billboard that only costs a fraction of one."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-neon-magenta/20 flex items-center justify-center text-neon-magenta font-bold">M</div>
+                        <div>
+                            <p class="font-semibold text-white">Maria Gonzalez</p>
+                            <p class="text-gray-500 text-sm">Owner, La Mesa Cocina</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 2 -->
+                <div class="glass-card rounded-2xl p-8 border border-white/10 hover:border-neon-green/40 transition duration-300">
+                    <div class="star-rating text-lg mb-4">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                    <p class="text-gray-300 leading-relaxed mb-6 italic">"We put our logo 200 feet above the job site and clients can see it from across the city through their Spectacles. Investors are blown away every time. COHUA changed how we present projects."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-neon-green/20 flex items-center justify-center text-neon-green font-bold">D</div>
+                        <div>
+                            <p class="font-semibold text-white">Derek Hamill</p>
+                            <p class="text-gray-500 text-sm">CEO, Hamill Construction Group</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Testimonial 3 -->
+                <div class="glass-card rounded-2xl p-8 border border-white/10 hover:border-neon-yellow/40 transition duration-300">
+                    <div class="star-rating text-lg mb-4">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                    <p class="text-gray-300 leading-relaxed mb-6 italic">"I had three buyers find my listing just by walking through the neighborhood and seeing the floating OPEN HOUSE sign. No yard sign competes with this. My sellers love the tech factor."</p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-neon-yellow/20 flex items-center justify-center text-neon-yellow font-bold">R</div>
+                        <div>
+                            <p class="font-semibold text-white">Rachel Kim</p>
+                            <p class="text-gray-500 text-sm">Real Estate Agent, Sotheby's Intl.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -197,6 +365,96 @@
             </div>
         </div>
     </section>
+
+    <!-- ============================================================ -->
+    <!-- CONTACT US -->
+    <!-- ============================================================ -->
+    <section id="contact" class="py-24 px-6 relative border-t border-white/5 bg-gray-900/30">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4">Get in <span class="text-neon-blue neon-text-blue">Touch</span></h2>
+                <p class="text-gray-400 text-lg">Ready to light up your location? Drop us a message.</p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-8 md:p-12 border border-white/10">
+                <form action="#" method="POST" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="name" class="block text-sm font-semibold text-gray-300 mb-2">Name</label>
+                            <input type="text" id="name" name="name" placeholder="Your name" class="w-full px-4 py-3 rounded-lg bg-gray-900/80 border border-white/10 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-neon-blue/60 focus:shadow-[0_0_10px_rgba(0,243,255,0.2)] transition">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-semibold text-gray-300 mb-2">Email</label>
+                            <input type="email" id="email" name="email" placeholder="you@company.com" class="w-full px-4 py-3 rounded-lg bg-gray-900/80 border border-white/10 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-neon-blue/60 focus:shadow-[0_0_10px_rgba(0,243,255,0.2)] transition">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="business" class="block text-sm font-semibold text-gray-300 mb-2">Business Name</label>
+                            <input type="text" id="business" name="business" placeholder="Your business" class="w-full px-4 py-3 rounded-lg bg-gray-900/80 border border-white/10 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-neon-blue/60 focus:shadow-[0_0_10px_rgba(0,243,255,0.2)] transition">
+                        </div>
+                        <div>
+                            <label for="industry" class="block text-sm font-semibold text-gray-300 mb-2">Industry</label>
+                            <select id="industry" name="industry" class="w-full px-4 py-3 rounded-lg bg-gray-900/80 border border-white/10 text-gray-100 focus:outline-none focus:border-neon-blue/60 focus:shadow-[0_0_10px_rgba(0,243,255,0.2)] transition">
+                                <option value="" class="bg-gray-900">Select your industry</option>
+                                <option value="retail" class="bg-gray-900">Retail</option>
+                                <option value="restaurant" class="bg-gray-900">Restaurant / Cafe</option>
+                                <option value="construction" class="bg-gray-900">Construction</option>
+                                <option value="realestate" class="bg-gray-900">Real Estate</option>
+                                <option value="other" class="bg-gray-900">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="message" class="block text-sm font-semibold text-gray-300 mb-2">Message</label>
+                        <textarea id="message" name="message" rows="4" placeholder="Tell us about your project..." class="w-full px-4 py-3 rounded-lg bg-gray-900/80 border border-white/10 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-neon-blue/60 focus:shadow-[0_0_10px_rgba(0,243,255,0.2)] transition resize-none"></textarea>
+                    </div>
+                    <div class="text-center pt-2">
+                        <button type="submit" class="px-10 py-4 rounded-full bg-neon-blue text-gray-900 font-bold text-lg hover:bg-white transition shadow-[0_0_15px_rgba(0,243,255,0.4)] hover:shadow-[0_0_30px_rgba(0,243,255,0.8)]">
+                            Send Message
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <div>
+                    <p class="text-gray-500 text-sm mb-1">Email</p>
+                    <a href="mailto:info@cohua.com" class="text-neon-blue hover:underline">info@cohua.com</a>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm mb-1">Phone</p>
+                    <p class="text-gray-300">(555) 000-COHUA</p>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-sm mb-1">Social</p>
+                    <div class="flex justify-center gap-4 text-gray-400">
+                        <a href="#" class="hover:text-neon-blue transition">Twitter</a>
+                        <a href="#" class="hover:text-neon-blue transition">Instagram</a>
+                        <a href="#" class="hover:text-neon-blue transition">LinkedIn</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- FOOTER -->
+    <!-- ============================================================ -->
+    <footer class="py-12 px-6 border-t border-white/5 bg-gray-950">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+            <div class="text-2xl font-bold tracking-widest text-white">COHUA<span class="text-neon-blue">.</span></div>
+            <div class="flex flex-wrap justify-center gap-6 text-sm text-gray-400">
+                <a href="#about" class="hover:text-neon-blue transition">About</a>
+                <a href="#industries" class="hover:text-neon-blue transition">Industries</a>
+                <a href="#contact" class="hover:text-neon-blue transition">Contact</a>
+                <a href="/login" class="hover:text-neon-blue transition">Login</a>
+                <a href="/dashboard" class="hover:text-neon-blue transition">Dashboard</a>
+            </div>
+            <p class="text-gray-600 text-sm">&copy; 2025 COHUA. All rights reserved.</p>
+        </div>
+    </footer>
 
 </body>
 </html>
