@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+
+# React Native
+.buckconfig
+
+# Android
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/release/
+*.apk
+*.aab
+*.keystore
+!debug.keystore
+
+# iOS
+ios/Pods/
+ios/build/
+ios/*.xcworkspace
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/
+*.ipa
+
+# Metro
+.metro-health-check*
+
+# Bundle artifacts
+*.jsbundle
+*.jsbundle.map
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+coverage/
+
+# Temporary
+tmp/
+temp/
