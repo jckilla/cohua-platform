@@ -202,7 +202,9 @@ NeonSignRenderer.prototype._createSign = function(campaign, neonRgb, altitudeM, 
  */
 NeonSignRenderer.prototype.billboardToCamera = function(cameraTransform) {
   var camPos = cameraTransform.getWorldPosition();
-  Object.values(this.signs).forEach(function(sign) {
+  // Use Object.keys().map() instead of Object.values() for Lens Studio compatibility
+  var self = this;
+  Object.keys(this.signs).map(function(k) { return self.signs[k]; }).forEach(function(sign) {
     var signPos = sign.root.getTransform().getWorldPosition();
     // Look at camera position but only rotate Y axis (stay vertical)
     var dir = new vec3(camPos.x - signPos.x, 0, camPos.z - signPos.z);
