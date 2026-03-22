@@ -1,165 +1,105 @@
-# COHUA - Meta Ray-Ban Display Companion App
+# COHUA — Meta Ray-Ban Display Companion App
 
-React Native mobile app that serves as the companion for Meta Ray-Ban Display glasses. Detects nearby COHUA advertising campaigns via GPS and announces them through the glasses speakers using text-to-speech.
+React Native companion app for Meta Ray-Ban Display glasses. Detects nearby COHUA campaigns via GPS and announces them through the glasses speakers using text-to-speech (TTS). Display/HUD stubs are retained for when Meta releases a third-party overlay API.
 
-## Audio-First Approach
+## Audio-First Architecture
 
-The Meta Wearables SDK (Device Access Toolkit) does **not** yet provide a display/HUD API for third-party apps. This app uses an **audio-first** strategy:
+The Meta Wearables SDK **does not** currently expose a display or HUD API for third-party apps. Our approach:
 
-- **Primary**: When the user walks within 50m of a COHUA campaign, the glasses **speak** the business info through their built-in speakers via Bluetooth A2DP.
-- **Camera**: Stubs are in place for future storefront visual detection using the glasses camera (720p/30fps).
-- **Display**: Placeholder methods are retained for when Meta releases third-party HUD APIs.
+- **PRIMARY — Audio:** When the user walks within `trigger_distance_m` of a campaign (default 50 m), the glasses speakers announce the business name, distance, and direction via TTS routed over Bluetooth.
+- **CAMERA — Stub:** `mwdat-camera` integration is scaffolded for future storefront visual detection.
+- **DISPLAY — Stub:** HUD rendering methods are retained as placeholders for when Meta releases a third-party overlay API.
 
-## Prerequisites
+```
+Phone (React Native App)
+  ├── GPS tracking              locationService
+  ├── Supabase campaign fetch   campaignFetcher   ← pull model (5 s poll + 2 m move)
+  ├── Proximity engine          proximityEngine
+  │     └── campaign within trigger_distance_m?
+  │           └── glasses.showSign() → TTS announcement
+  └── glasses-bridge.js
+        ├── Audio (ACTIVE)      TTS → Bluetooth A2DP → glasses speakers
+        ├── Camera (stub)       mwdat-camera — awaiting integration
+        └── Display (stub)      awaiting Meta HUD API
+```
 
-- **Node.js** >= 18
-- **React Native CLI** (`npx react-native`)
-- **Android Studio** (for Android builds)
-  - Android SDK 34+
-  - Kotlin plugin
-- **Xcode 15+** (for iOS builds, macOS only)
-  - CocoaPods (`gem install cocoapods`)
-- **Meta Wearables Device Access Toolkit** (optional, for real glasses)
-  - Request access at [Meta for Developers](https://developers.facebook.com/)
-  - Meta App ID: configured in `src/meta-sdk/glasses-bridge.js`
+## Pull Model State Machine
+
+`fetcher.js` polls Supabase every 5 seconds (or after 2 m of movement) and fires `enter`/`exit` proximity events. `proximityEngine` listens and calls the glasses bridge. Each campaign can override the trigger distance via the `trigger_distance_m` column; the fallback is `Config.TRIGGER_M` (50 m).
+
+Future gaze-triggered (pull) display: when the user looks toward a sign direction for `GAZE_DWELL_MS` (1500 ms) within `CONE_ANGLE_DEG` (60°), the HUD overlay is pulled into view. Configurable in `src/services/config.js`.
+
+## Meta SDK Setup
+
+| SDK Package | Purpose | Status |
+|---|---|---|
+| `com.meta.wearable:mwdat-core` | Device pairing, audio | commented in build.gradle |
+| `com.meta.wearable:mwdat-camera` | 720p camera stream | commented in build.gradle |
+| `com.meta.wearable:mwdat-mockdevice` | Dev/test without glasses | commented in build.gradle |
+
+To activate the real SDK:
+
+1. Request access at the Meta Developer Portal and get Maven credentials.
+2. Uncomment the Maven repo in `android/build.gradle`.
+3. Uncomment the three SDK dependencies in `android/app/build.gradle`.
+4. Uncomment the SDK import lines in `android/app/src/main/java/com/cohua/rayban/MetaWearablesBridgeModule.kt`.
+
+The app works without the SDK — TTS falls back to the phone speaker and routes automatically to glasses via Bluetooth A2DP when paired.
 
 ## Setup
 
 ```bash
-# Clone and install
-cd rayban-app
 npm install
 
-# iOS only
-cd ios && pod install && cd ..
-```
-
-## Running the App
-
-### MockDevice Mode (Development - No Glasses Needed)
-
-The app defaults to MockDevice mode in development (`__DEV__`). This simulates the glasses connection and camera without physical hardware.
-
-```bash
-# Start Metro bundler
-npm start
-
-# Run on Android emulator/device
-npm run android
-
-# Run on iOS simulator/device
-npm run ios
-```
-
-In MockDevice mode:
-- Glasses connection is simulated immediately
-- Camera frames are mocked at 30fps
-- TTS announcements play through the phone speaker
-- All proximity detection and campaign fetching work normally via real GPS
-
-### Real Device (Physical Ray-Ban Glasses)
-
-1. Install the **Meta AI** companion app on your phone
-2. Pair your Ray-Ban glasses through Meta AI
-3. Build the app in release mode:
-
-```bash
 # Android
-npx react-native run-android --mode=release
+npx react-native run-android
 
-# iOS
-npx react-native run-ios --configuration Release
+# iOS (not primary target — Meta SDK is Android-only)
+cd ios && pod install && cd ..
+npx react-native run-ios
 ```
 
-4. The app will connect to the glasses via Bluetooth
-5. TTS audio automatically routes to the glasses speakers via Bluetooth A2DP
+See **BUILD_APK.md** for full debug/release APK build instructions.
 
-### Meta SDK Setup (Android)
-
-To enable the real Meta Wearables SDK (beyond stubs):
-
-1. Add the Meta Maven repository to `android/settings.gradle`:
-   ```groovy
-   dependencyResolutionManagement {
-       repositories {
-           maven { url 'https://github.com/nicklockwood/meta-wearables-dat-android/raw/main/repo' }
-       }
-   }
-   ```
-
-2. Apply the dependency patch from `android/app/build.gradle.patch` to your `build.gradle`
-
-3. Register the native package in `MainApplication.kt`:
-   ```kotlin
-   packages.add(com.cohua.rayban.MetaWearablesPackage())
-   ```
-
-4. Uncomment the SDK imports in `MetaWearablesBridgeModule.kt`
-
-### Meta SDK Setup (iOS)
-
-1. Add the Meta Wearables SDK via Swift Package Manager or CocoaPods
-2. Uncomment the SDK imports in `ios/MetaWearablesBridge.swift`
-3. The ObjC bridging file (`MetaWearablesBridge.m`) is already configured
-
-## Architecture
+## Project Structure
 
 ```
-Phone (React Native App)
-  +-- index.js                         Entry point, registers App
-  +-- src/App.js                       Root component, renders HomeScreen
-  +-- src/screens/HomeScreen.js        Main dashboard UI
-  +-- src/services/
-  |     +-- config.js                  Constants (Supabase, radius, thresholds)
-  |     +-- geo-math.js                Haversine, bearing, direction utilities
-  |     +-- location.js                GPS + compass service (singleton)
-  |     +-- fetcher.js                 Supabase campaign fetcher (singleton)
-  |     +-- proximity-engine.js        Orchestrator: GPS -> fetch -> proximity -> glasses
-  +-- src/meta-sdk/
-  |     +-- glasses-bridge.js          Meta SDK integration (TTS + native bridge)
-  |     +-- mock-test.js               MockDevice integration test
-  +-- android/app/src/main/java/com/cohua/rayban/
-  |     +-- MetaWearablesBridgeModule.kt   Android native module (Kotlin)
-  |     +-- MetaWearablesPackage.kt        React Native package registration
-  +-- android/app/build.gradle.patch       Meta SDK Gradle dependencies
-  +-- ios/
-        +-- MetaWearablesBridge.swift       iOS native module (Swift)
-        +-- MetaWearablesBridge.m           ObjC bridging declarations
+src/
+  App.js                        Root component
+  screens/
+    HomeScreen.js               Dashboard: GPS status, campaigns list, controls
+  services/
+    config.js                   All tunable constants (Supabase, thresholds, TTS, pull model)
+    geo-math.js                 Haversine, bearing, relative direction utilities
+    location.js                 GPS + compass service
+    fetcher.js                  Supabase pull: fetch → radius filter → proximity events
+    proximity-engine.js         Orchestrator: GPS → fetch → enter/exit → glasses bridge
+  meta-sdk/
+    glasses-bridge.js           Meta Wearables bridge (audio active, camera/display stubs)
+android/
+  app/src/main/java/com/cohua/rayban/
+    MetaWearablesBridgeModule.kt  Native Kotlin bridge to mwdat-core/camera
+    MetaWearablesPackage.kt       RN package registration
 ```
-
-### Data Flow
-
-1. **GPS** (`location.js`) tracks user position continuously
-2. **Fetcher** (`fetcher.js`) queries Supabase for live campaigns every 5s or on 2m+ movement
-3. **Proximity Engine** (`proximity-engine.js`) filters campaigns within 914m (3000 ft) detection radius
-4. When user enters the **50m trigger zone**, the engine calls `glasses-bridge.js`
-5. **Glasses Bridge** speaks the business name, distance, and direction through the glasses speakers via TTS over Bluetooth
-
-### Connection Modes
-
-| Mode | Description |
-|------|-------------|
-| `audio_only` | TTS through glasses speakers (or phone speaker fallback) |
-| `audio_camera` | Audio + camera streaming from glasses |
-| `mock_device` | Simulated glasses for development |
-| `disconnected` | No glasses connected |
 
 ## Supabase Backend
 
-Uses the same backend as the Snap Spectacles version.
+Same backend as Snap Spectacles — no schema changes needed for audio-only mode.
 
-- **Table**: `campaigns` (filtered by `status = 'live'` and `latitude not null`)
-- **Detection radius**: 914m (3000 ft)
-- **Glasses trigger**: 50m
-- **Poll interval**: 5 seconds
+- **URL:** `https://sgredejirqatcmstlzqi.supabase.co`
+- **Table:** `campaigns` (`status = 'live'`, `latitude not null`)
+- **Per-campaign overrides:** `trigger_distance_m`, `opt_in_required`, `model_url`, `deploy_payload`
+- **Detection radius:** 914 m (3000 ft)
+- **Default glasses trigger:** 50 m (overridable per campaign)
+- **Poll interval:** 5 seconds or every 2 m of movement
 
-## Running the Mock Test
+## Key Configuration (`src/services/config.js`)
 
-The mock test validates the full sign lifecycle without glasses:
-
-```bash
-# From the rayban-app directory
-node src/meta-sdk/mock-test.js
-```
-
-This simulates walking near the Downey Post Office, logging all TTS output that would route to the glasses speakers.
+| Constant | Default | Purpose |
+|---|---|---|
+| `TRIGGER_M` | 50 | Fallback proximity trigger (m) |
+| `TTS_THROTTLE_MS` | 8000 | Min ms between announcements for same campaign |
+| `TTS_DISTANCE_BUCKET_FT` | 100 | Re-announce every 100 ft closer |
+| `TTS_RATE` | 0.48 | Speech rate for clarity through glasses speakers |
+| `CONE_ANGLE_DEG` | 60 | Gaze cone width for future pull-model HUD |
+| `GAZE_DWELL_MS` | 1500 | Dwell time to trigger pull-model HUD |

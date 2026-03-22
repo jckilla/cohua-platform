@@ -51,6 +51,20 @@ export function relativeDirection(userHeading, targetBearing) {
 }
 
 /**
+ * Returns true if userHeading is within coneAngle degrees of targetBearing.
+ * Uses circular arithmetic so wrapping (e.g., 359° vs 1°) is handled correctly.
+ *
+ * @param {number} userHeading   — compass heading of user (0–360)
+ * @param {number} targetBearing — compass bearing to target (0–360)
+ * @param {number} coneAngle     — half-angle of cone in degrees (default 15°)
+ */
+export function headingWithinCone(userHeading, targetBearing, coneAngle = 15) {
+  let diff = Math.abs((targetBearing - userHeading + 360) % 360);
+  if (diff > 180) diff = 360 - diff;
+  return diff <= coneAngle;
+}
+
+/**
  * Parse hex color to { r, g, b } in 0–255 range.
  */
 export function hexToRgb(hex) {

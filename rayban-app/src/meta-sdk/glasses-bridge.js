@@ -33,6 +33,8 @@
 
 import Tts from 'react-native-tts';
 import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
+import { Config } from '../services/config';
+import { pullStateMachine, OptInMethod } from '../services/pull-state-machine';
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  META SDK CONFIGURATION
@@ -73,14 +75,14 @@ const META_CONFIG = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const AUDIO_CONFIG = {
-  // TTS settings for glasses speakers
-  ttsRate: 0.48,           // Slightly slower for clarity through small speakers
-  ttsPitch: 1.0,
-  ttsLanguage: 'en-US',
+  // TTS settings — values come from config.js (single source of truth)
+  get ttsRate()             { return Config.TTS_RATE; },
+  get ttsPitch()            { return Config.TTS_PITCH; },
+  get ttsLanguage()         { return Config.TTS_LANGUAGE; },
 
   // Re-announce thresholds — avoid spamming the user
-  distanceThresholdFt: 100,  // Only re-announce when crossing 100ft boundaries
-  minAnnouncementGapMs: 8000, // At least 8 seconds between announcements
+  get distanceThresholdFt() { return Config.TTS_DISTANCE_BUCKET_FT; },
+  get minAnnouncementGapMs(){ return Config.TTS_THROTTLE_MS; },
 
   // Announcement templates
   templates: {
@@ -258,8 +260,10 @@ class MetaGlassesBridge {
   // ═══════════════════════════════════════════════════════════════════════
 
   /**
-   * Show a sign — in audio-first mode, this SPEAKS the sign info
-   * through the glasses speakers using TTS.
+   * Show a sign — speaks the sign info through the glasses speakers via TTS.
+   *
+   * Called by ProximityEngine ONLY after gaze confirmation (DISCOVERY_READY),
+   * NOT on proximity enter. This is step 4 of the pull model.
    *
    * @param {Object} signData
    * @param {string} signData.id         — Campaign UUID
@@ -394,6 +398,86 @@ class MetaGlassesBridge {
    */
   getActiveSigns() {
     return Object.values(this._activeSigns);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  PULL MODEL — OPT-IN HANDLERS (Step 5)
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  //  These are called when the user performs the opt-in gesture or voice
+  //  command to transition from DISCOVERY_READY → ACTIVE_AR.
+  //
+  //  The native bridge fires a tap event when the user touches the glasses
+  //  touchpad. Voice commands come from the glasses mic via Meta's voice
+  //  recognition pipeline (both route through the native bridge module).
+
+  /**
+   * Handle a tap gesture on the glasses touchpad.
+   * Transitions the nearest DISCOVERY_READY campaign to ACTIVE_AR.
+   *
+   * Called by the native bridge when a single tap is detected:
+   *   Android: MetaWearablesBridgeModule emits 'onGestureTap'
+   *   iOS:     MetaWearablesBridge fires gestureEvent({ type: 'tap' })
+   *
+   * @param {string} campaignId — ID of the campaign to opt into
+   */
+  handleTapOptIn(campaignId) {
+    console.log(`[COHUA-GLASSES] TAP OPT-IN: ${campaignId}`);
+    pullStateMachine.onOptIn(campaignId, OptInMethod.GESTURE_TAP);
+  }
+
+  /**
+   * Handle a "show" voice command from the glasses microphone.
+   * Transitions the campaign to ACTIVE_AR via voice opt-in.
+   *
+   * Called by the native bridge when the voice pipeline recognises the
+   * trigger phrase (e.g. "Hey Meta, show" / "show sign"):
+   *   Android/iOS: MetaWearablesBridgeModule emits 'onVoiceCommand'
+   *
+   * @param {string} campaignId — ID of the campaign to activate
+   */
+  handleVoiceOptIn(campaignId) {
+    console.log(`[COHUA-GLASSES] VOICE OPT-IN: ${campaignId}`);
+    pullStateMachine.onOptIn(campaignId, OptInMethod.VOICE_COMMAND_SHOW);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  PULL MODEL — ARCore VPS SESSION (Step 6)
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  //  ARCore Visual Positioning System anchors the AR overlay to a real-world
+  //  location with sub-meter accuracy. This fires ONLY after the user has
+  //  opted in (ACTIVE_AR state). It never runs speculatively.
+  //
+  //  Current status: STUB — ARCore VPS integration not yet implemented.
+  //  When implemented, this will:
+  //    1. Call ARCoreSession.configure({ mode: VPS })
+  //    2. Resolve the campaign's lat/lon to a VPS waypoint
+  //    3. Place a world-locked AR anchor at campaign.latitude/longitude/altitude_m
+  //    4. Render the campaign asset (neon logo / menu / 3D model) at that anchor
+
+  /**
+   * Start an ARCore VPS session for the given campaign.
+   * Called automatically by ProximityEngine when ACTIVE_AR is reached.
+   *
+   * @param {string} campaignId
+   * @param {Object} campaign — full campaign object (latitude, longitude, altitude_m, etc.)
+   */
+  startVPSSession(campaignId, campaign) {
+    console.log(
+      `[COHUA-GLASSES] VPS SESSION START: ${campaign?.name || campaignId}` +
+      ` @ ${campaign?.latitude},${campaign?.longitude} alt=${campaign?.altitude_m}m`
+    );
+    console.log('[COHUA-GLASSES] ARCore VPS not yet integrated — stub fires here.');
+
+    // FUTURE — ARCore VPS integration:
+    // const session = await ARCoreSession.create({ mode: 'VPS' });
+    // const waypoint = await session.resolveWaypoint(campaign.latitude, campaign.longitude);
+    // const anchor = await session.createAnchor(waypoint, campaign.altitude_m);
+    // ARRenderer.placeAsset(anchor, { type: campaign.asset_type, payload: campaign._payload });
+
+    // Trigger haptic to confirm AR activation
+    this.triggerHaptic('medium');
   }
 
   // ═══════════════════════════════════════════════════════════════════════

@@ -49,6 +49,7 @@ class CampaignFetcher {
     const cols = [
       'id', 'name', 'asset_type', 'latitude', 'longitude',
       'altitude_m', 'model_scale', 'deploy_payload', 'location_label',
+      'trigger_distance_m', 'opt_in_required', 'model_url',
     ].join(',');
 
     const url = `${Config.SUPABASE_URL}/rest/v1/campaigns`
@@ -115,14 +116,15 @@ class CampaignFetcher {
   }
 
   /**
-   * Check which campaigns are within TRIGGER_M and fire proximity events.
-   * These are the ones that should appear on the Ray-Ban Display.
+   * Check which campaigns are within their trigger distance and fire proximity events.
+   * Uses campaign's trigger_distance_m if present, falls back to Config.TRIGGER_M.
    */
   _checkProximity() {
     const newNearby = [];
 
     for (const c of this.campaigns) {
-      if (c._distanceM <= Config.TRIGGER_M) {
+      const triggerM = c.trigger_distance_m || Config.TRIGGER_M;
+      if (c._distanceM <= triggerM) {
         newNearby.push(c);
 
         // Fire enter event if this is a new proximity trigger
